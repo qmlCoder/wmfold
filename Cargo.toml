@@ -1,0 +1,37 @@
+[package]
+name = "wmfold"
+version = "0.3.4"
+description = "WMFold - 化学文件资源管理器 (GPUI Kit)"
+authors = ["Shi Xiaofei"]
+edition = "2021"
+
+[[bin]]
+name = "wmfold"
+path = "src/main.rs"
+
+[dependencies]
+# 原生桌面 GUI 框架（GPUI + GPUI Base + GPUI Component + 默认图标资源）
+gpui-kit = "0.7.1"
+
+# 使用用户自研的波函数分析库解析常见的化学文件
+rswfn = { path = "../rswfn" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+regex = "1"
+chrono = "0.4"
+trash = "5"
+rayon = "1.5"
+# 用系统默认程序打开文件/文件夹
+open = "5"
+
+[profile.dev]
+opt-level = 1
+
+# GPUI 及其依赖在 debug 下也做优化，否则界面会非常卡顿
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+opt-level = 3
+lto = "thin"
