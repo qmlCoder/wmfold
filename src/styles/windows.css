@@ -1,0 +1,597 @@
+/* 全局 Windows 11 资源管理器风格 */
+
+:root {
+  font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: #1b1b1b;
+  background-color: #f3f3f3;
+  --accent: #0067c0;
+  --hover: rgba(0, 0, 0, 0.05);
+  --hover-accent: rgba(0, 103, 192, 0.08);
+  --selected: #cce4ff;
+  --selected-hover: #b6d8ff;
+  --border: #e0e0e0;
+  --chrome-bg: #f0f0f0;
+  --table-bg: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* ---------- 整体骨架 ---------- */
+.wmfold {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.wmfold-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.wmfold-content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.wmfold-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--table-bg);
+}
+
+/* ---------- 命令栏（ribbon 风格） ---------- */
+.wm-cmd {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  background: var(--chrome-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.wm-cmd .cmd-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: 46px;
+  padding: 4px 6px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: #1b1b1b;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.wm-cmd .cmd-btn:hover {
+  background: var(--hover);
+}
+
+.wm-cmd .cmd-btn:active {
+  background: var(--hover-accent);
+}
+
+.wm-cmd .cmd-btn.is-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.wm-cmd .cmd-btn .el-icon {
+  font-size: 18px;
+  color: var(--accent);
+}
+
+.wm-cmd .cmd-btn span {
+  font-size: 11px;
+  margin-top: 2px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.wm-cmd .cmd-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+  margin: 4px 6px;
+}
+
+.wm-cmd .cmd-title {
+  font-size: 12px;
+  color: #666;
+  padding: 0 6px;
+  user-select: none;
+}
+
+/* ---------- 地址栏 ---------- */
+.wm-addrbar {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 6px;
+  gap: 2px;
+}
+
+.wm-addrbar:hover {
+  border-color: #c1c1c1;
+}
+
+.wm-crumbs {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.wm-crumb {
+  padding: 3px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #1b1b1b;
+  font-size: 13px;
+  user-select: none;
+}
+
+.wm-crumb:hover {
+  background: var(--hover);
+}
+
+.wm-crumb-sep {
+  color: #aaa;
+  font-size: 12px;
+  user-select: none;
+}
+
+.wm-addrbar-input {
+  flex: 1;
+}
+
+.wm-addrbar-input .el-input__wrapper {
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.wm-addrbar-input .el-input__inner {
+  font-size: 13px;
+  height: 30px;
+}
+
+.wm-search {
+  width: 200px;
+  height: 34px;
+  margin-left: 8px;
+}
+
+/* ---------- 侧边栏 ---------- */
+.wm-sidebar {
+  width: 210px;
+  background: var(--chrome-bg);
+  border-left: 1px solid transparent;
+  overflow-y: auto;
+  padding: 6px 4px 12px;
+  user-select: none;
+  border-right: 1px solid var(--border);
+}
+
+.wm-sidebar-section {
+  font-size: 11px;
+  color: #777;
+  padding: 10px 8px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.wm-side-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #1b1b1b;
+  font-size: 13px;
+}
+
+.wm-side-item:hover {
+  background: var(--hover);
+}
+
+.wm-side-item.is-active {
+  background: var(--hover);
+  color: #000;
+}
+
+.wm-side-item .el-icon {
+  color: #888;
+}
+
+/* ---------- 文件表格 ---------- */
+.wm-table {
+  flex: 1;
+  min-height: 0;
+}
+
+/* 文件列表单元格禁止文本选中：悬停/拖动不出现「划词」文本选择样式（贴近 Windows 资源管理器） */
+.wm-table .el-table .cell,
+.wm-table .el-table .el-table__body td .cell {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  cursor: default;
+}
+
+.wm-table .el-table {
+  --el-table-border-color: #eeeeee;
+  --el-table-header-bg-color: #f8f8f8;
+  --el-table-row-hover-bg-color: #f5f8fc;
+  font-size: 13px;
+  --el-table-row-height: 30px;
+}
+
+/* 列宽可拖拽调整：Element Plus 需开启 border 才启用 resize，这里用细腻分隔线代替重边框 */
+.wm-table .el-table.el-table--border .el-table__inner-wrapper::after,
+.wm-table .el-table.el-table--border::after,
+.wm-table .el-table.el-table--border::before {
+  background-color: #eeeeee;
+}
+.wm-table .el-table.el-table--border .el-table__header th,
+.wm-table .el-table.el-table--border .el-table__body td {
+  border-right: 1px solid #f0f0f0;
+}
+.wm-table .el-table.el-table--border .el-table__header th:last-child {
+  border-right: none;
+}
+
+/* 表头：悬停时细微高亮，右侧为列宽调节手柄的落点 */
+.wm-table .el-table th.el-table__cell {
+  background: #f8f8f8;
+  color: #444;
+  font-weight: 600;
+  font-size: 12px;
+  height: 30px;
+  position: relative;
+}
+.wm-table .el-table th.el-table__cell:hover {
+  background: #eff4fa;
+}
+
+/* 列宽调节提示线（拖拽时 Element Plus 原生代理，统一为强调色细线） */
+.wm-table .el-table .el-table__column-resize-proxy {
+  background: var(--accent);
+  width: 2px;
+  opacity: 0.85;
+}
+
+/* 表头右缘的列宽调节落点：接近右缘时显示 col-resize 光标 */
+.wm-table .el-table th.el-table__cell .cell {
+  position: relative;
+}
+
+/* 列太多放不下时：默认隐藏横向滚动条，鼠标悬停在表格上才显示（Windows 风格） */
+.wm-table .el-scrollbar__bar.is-horizontal {
+  opacity: 0 !important;
+  height: 10px;
+  background: transparent;
+  transition: opacity 0.15s ease;
+}
+.wm-table:hover .el-scrollbar__bar.is-horizontal {
+  opacity: 1 !important;
+}
+.wm-table .el-scrollbar__bar.is-horizontal .el-scrollbar__thumb {
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 6px;
+}
+
+.wm-table .el-table .cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wm-table .el-table__row {
+  height: 30px;
+}
+
+.wm-table .el-table__row.selected-row td {
+  background: var(--selected);
+}
+
+.wm-table .el-table__row.selected-row:hover td {
+  background: var(--selected-hover);
+}
+
+.wm-file-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.wm-file-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wm-file-icon.folder .el-icon {
+  color: #e8a33d;
+  font-size: 20px;
+}
+
+.wm-file-icon .el-icon {
+  font-size: 18px;
+  color: #7a7a7a;
+}
+
+.wm-file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 化学徽章 */
+.wm-chem-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #fff;
+  line-height: 1.4;
+}
+
+.wm-chem-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.wm-chem-formula {
+  font-family: 'Segoe UI', sans-serif;
+  letter-spacing: 0.2px;
+}
+
+.wm-chem-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 状态栏 ---------- */
+.wm-statusbar {
+  display: flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px;
+  gap: 14px;
+  background: var(--chrome-bg);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: #444;
+  user-select: none;
+}
+
+.wm-statusbar .spacer {
+  flex: 1;
+}
+
+/* ---------- 空状态 ---------- */
+.wm-empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: #999;
+  gap: 8px;
+}
+
+.wm-empty .el-icon {
+  font-size: 40px;
+  color: #ccc;
+}
+
+/* ---------- 详情面板 ---------- */
+.wm-chempanel {
+  width: 280px;
+  border-left: 1px solid var(--border);
+  background: #fafbfc;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.wm-chempanel-header {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wm-chempanel .prop-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+}
+
+.wm-chempanel .prop-row .k {
+  color: #666;
+}
+
+.wm-chempanel .prop-row .v {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 右键菜单 ---------- */
+.wm-menu {
+  position: fixed;
+  z-index: 3000;
+  min-width: 200px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+.wm-menu .menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #1b1b1b;
+}
+
+.wm-menu .menu-item:hover {
+  background: var(--hover-accent);
+}
+
+.wm-menu .menu-item.is-danger {
+  color: #d93025;
+}
+
+.wm-menu .menu-sep {
+  height: 1px;
+  background: #eee;
+  margin: 4px 6px;
+}
+
+/* ---------- 文件类型筛选按钮栏 ---------- */
+.wm-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--chrome-bg);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.wm-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 15px;
+  background: transparent;
+  color: #333;
+  cursor: pointer;
+  font-size: 12px;
+  flex-shrink: 0;
+  transition: background 0.1s ease, border-color 0.1s ease;
+}
+
+.wm-filter:hover {
+  background: var(--hover);
+}
+
+.wm-filter.is-active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.wm-filter-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.wm-filter.is-active .wm-filter-dot {
+  outline: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.wm-filter-count {
+  min-width: 18px;
+  padding: 0 5px;
+  height: 16px;
+  line-height: 16px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.08);
+  color: #666;
+  font-size: 11px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.wm-filter.is-active .wm-filter-count {
+  background: rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+/* ---------- 设置对话框 ---------- */
+.wm-settings {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.wm-settings-group {
+  margin-bottom: 14px;
+}
+
+.wm-settings-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #eee;
+}
+
+.wm-settings-cols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
