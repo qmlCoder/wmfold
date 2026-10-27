@@ -1,6 +1,7 @@
 mod chem;
 mod fs_cmds;
 mod models;
+mod settings;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -20,6 +21,8 @@ pub fn run() {
             fs_cmds::open_path,
             chem::read_chem,
             chem::read_chem_batch,
+            settings::load_settings,
+            settings::save_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

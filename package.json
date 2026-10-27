@@ -2,13 +2,33 @@
   "name": "wmfold",
   "private": true,
   "version": "0.3.4",
-  "description": "WMFold - 化学文件资源管理器 (GPUI Kit)",
+  "description": "WMFold - 化学文件资源管理器 (Tauri 2 + Vue)",
+  "type": "module",
   "scripts": {
-    "dev": "cargo run",
-    "build": "cargo build --release",
-    "test": "cargo test",
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
     "bump:version": "node scripts/bump-version.mjs",
     "rename:exe": "node scripts/rename-exe.mjs",
-    "build:app": "npm run bump:version && cargo build --release && npm run rename:exe"
+    "build:app": "npm run bump:version && npm run tauri build && npm run rename:exe"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2.5.5",
+    "element-plus": "^2.14.5",
+    "pinia": "^4.0.3",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "~5.6.2",
+    "vite": "^6.0.3",
+    "vue-tsc": "^2.1.10"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
   }
 }

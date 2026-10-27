@@ -1,6 +1,6 @@
 [package]
 name = "wmfold"
-version = "0.3.3"
+version = "0.3.4"
 description = "WMFold - 化学文件资源管理器"
 authors = ["Shi Xiaofei"]
 edition = "2021"

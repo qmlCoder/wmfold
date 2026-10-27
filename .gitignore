@@ -7,7 +7,6 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Node / 旧前端构建产物
 node_modules
 dist
 dist-ssr
@@ -24,9 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# Rust / GPUI
-/target
-**/target
+# Tauri
+src-tauri/target
+src-tauri/gen*
 
-# 旧 Tauri 工程生成物
-legacy/src-tauri/gen*
+# GPUI 归档实现（不参与当前构建）
+legacy-gpui/target
+/target

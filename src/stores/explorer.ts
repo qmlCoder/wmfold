@@ -93,11 +93,10 @@ export const useExplorer = defineStore('explorer', () => {
   );
 
   function persistColumnSettings() {
-    try {
-      localStorage.setItem('wmfold.columnSettings', JSON.stringify(columnSettings.value));
-    } catch {
-      /* ignore */
-    }
+    // 写入 %APPDATA%\wmfold\settings.json；失败时仅在错误条上提示，不打断操作
+    api.saveSettings({ ...columnSettings.value }).catch((e) => {
+      error.value = `保存设置失败：${String(e)}`;
+    });
   }
 
   function columnsFor(kind: string): string[] {
@@ -191,12 +190,12 @@ export const useExplorer = defineStore('explorer', () => {
     } catch (e) {
       error.value = String(e);
     }
-    // 读取用户设置（每种类型显示哪些列）
+    // 读取用户设置（每种类型显示哪些列，存于 %APPDATA%\wmfold\settings.json）
     try {
-      const saved = localStorage.getItem('wmfold.columnSettings');
-      if (saved) Object.assign(columnSettings.value, JSON.parse(saved));
+      const saved = await api.loadSettings();
+      if (saved?.column_settings) Object.assign(columnSettings.value, saved.column_settings);
     } catch {
-      /* ignore */
+      /* 读取失败时沿用默认列 */
     }
     await refresh();
   }

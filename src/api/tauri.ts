@@ -1,7 +1,7 @@
 // Tauri 后端命令的 TypeScript 封装。
 
 import { invoke } from '@tauri-apps/api/core';
-import type { ChemMeta, DriveInfo, FileEntry, QuickAccess } from '../types';
+import type { ChemMeta, DriveInfo, FileEntry, QuickAccess, Settings } from '../types';
 
 export const api = {
   listDir: (path: string) => invoke<FileEntry[]>('list_dir', { path }),
@@ -20,4 +20,8 @@ export const api = {
   readChem: (path: string) => invoke<ChemMeta>('read_chem', { path }),
   readChemBatch: (paths: string[]) => invoke<ChemMeta[]>('read_chem_batch', { paths }),
 
+  // 用户设置（每种类型显示哪些化学列），保存在 %APPDATA%\wmfold\settings.json
+  loadSettings: () => invoke<Settings>('load_settings'),
+  saveSettings: (columnSettings: Record<string, string[]>) =>
+    invoke<void>('save_settings', { settings: { column_settings: columnSettings } }),
 };

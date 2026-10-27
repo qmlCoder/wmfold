@@ -58,3 +58,11 @@ export interface QuickAccess {
 
 export type SortOrder = 'ascending' | 'descending' | null;
 export type SortProp = string;
+
+/**
+ * 用户设置（对应 Rust `settings::Settings`）。
+ * 注意：JSON 键名保持 snake_case，与 0.3.4 GPUI 版写出的 settings.json 兼容。
+ */
+export interface Settings {
+  column_settings: Record<string, string[]>;
+}

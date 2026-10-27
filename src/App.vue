@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue';
-import { ElMessageBox } from 'element-plus';
 import { useExplorer } from './stores/explorer';
+import { useFileActions } from './composables/useFileActions';
 import Toolbar from './components/Toolbar.vue';
 import CommandRibbon from './components/CommandRibbon.vue';
 import FilterBar from './components/FilterBar.vue';
@@ -12,39 +12,15 @@ import ChemPanel from './components/ChemPanel.vue';
 import ContextMenu from './components/ContextMenu.vue';
 
 const store = useExplorer();
-
-async function deleteSelected() {
-  if (!store.hasSelection) return;
-  try {
-    await ElMessageBox.confirm(`确定删除选中的 ${store.selectedEntries.length} 项吗？`, '删除', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
-      type: 'warning',
-    });
-    await store.deleteSelected(false);
-  } catch {
-    /* 取消 */
-  }
-}
-
-async function rename() {
-  const t = store.selectedEntries[0];
-  if (!t) return;
-  try {
-    const { value } = await ElMessageBox.prompt('请输入新名称', '重命名', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      inputValue: t.name,
-    });
-    if (value) await store.renameEntry(t, value);
-  } catch {
-    /* 取消 */
-  }
-}
+const { newFolder, newFile, deleteSelected, rename } = useFileActions();
 
 function onKeyDown(e: KeyboardEvent) {
+  // 输入框 / 文本域 / 下拉框内不拦截快捷键
   const tag = (e.target as HTMLElement).tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+  const mod = e.ctrlKey || e.metaKey;
+  const key = e.key.toLowerCase();
 
   if (e.altKey && e.key === 'ArrowLeft') {
     e.preventDefault();
@@ -55,11 +31,22 @@ function onKeyDown(e: KeyboardEvent) {
   } else if (e.key === 'Backspace') {
     e.preventDefault();
     store.goUp();
-  } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+  } else if (e.key === 'F5') {
+    e.preventDefault();
+    store.refresh();
+  } else if (mod && e.shiftKey && key === 'n') {
+    // Ctrl+Shift+N：新建文件夹
+    e.preventDefault();
+    newFolder();
+  } else if (mod && key === 'n') {
+    // Ctrl+N：新建文件
+    e.preventDefault();
+    newFile();
+  } else if (mod && key === 'c') {
     store.copySelected('copy');
-  } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
+  } else if (mod && key === 'x') {
     store.copySelected('cut');
-  } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+  } else if (mod && key === 'v') {
     store.paste();
   } else if (e.key === 'Delete') {
     e.preventDefault();
@@ -85,6 +72,9 @@ onBeforeUnmount(() => {
     <Toolbar />
     <CommandRibbon />
     <FilterBar />
+    <div v-if="store.error" class="wm-errorbar" title="点击关闭" @click="store.error = ''">
+      {{ store.error }}
+    </div>
     <div class="wmfold-body">
       <Sidebar />
       <div class="wmfold-content">
