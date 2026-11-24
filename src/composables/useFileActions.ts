@@ -1,7 +1,8 @@
 // 文件操作（新建 / 删除 / 重命名）的共用封装。
-// 命令栏按钮与全局快捷键走同一套提示逻辑，避免两处行为不一致。
+// 命令栏按钮与全局快捷键走同一套逻辑，避免两处行为不一致；操作结果直接反映在列表中，
+// 不使用自动消失的 ElMessage 弹窗。
 
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessageBox } from 'element-plus';
 import { useExplorer } from '../stores/explorer';
 
 export function useFileActions() {
@@ -17,7 +18,6 @@ export function useFileActions() {
       });
       if (value) {
         await store.createFolder(value);
-        ElMessage.success('文件夹已创建');
       }
     } catch {
       /* 取消 */
@@ -34,7 +34,6 @@ export function useFileActions() {
       });
       if (value) {
         await store.createFile(value);
-        ElMessage.success('文件已创建');
       }
     } catch {
       /* 取消 */
@@ -45,11 +44,8 @@ export function useFileActions() {
    * 删除选中项（默认进回收站）。
    * @param warnWhenEmpty 没有选中项时是否弹出提示（快捷键触发时保持静默）
    */
-  async function deleteSelected(warnWhenEmpty = false) {
-    if (!store.hasSelection) {
-      if (warnWhenEmpty) ElMessage.warning('请先选择要删除的项目');
-      return;
-    }
+  async function deleteSelected(_warnWhenEmpty = false) {
+    if (!store.hasSelection) return;
     try {
       await ElMessageBox.confirm(
         `确定要删除选中的 ${store.selectedEntries.length} 个项目吗？`,
@@ -57,7 +53,6 @@ export function useFileActions() {
         { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' },
       );
       await store.deleteSelected(false);
-      ElMessage.success('已删除');
     } catch {
       /* 取消 */
     }
@@ -67,12 +62,9 @@ export function useFileActions() {
    * 重命名当前选中的单个项目。
    * @param warnWhenEmpty 没有选中项时是否弹出提示（快捷键触发时保持静默）
    */
-  async function rename(warnWhenEmpty = false) {
+  async function rename(_warnWhenEmpty = false) {
     const sel = store.selectedEntries[0];
-    if (!sel) {
-      if (warnWhenEmpty) ElMessage.warning('请先选择一个项目');
-      return;
-    }
+    if (!sel) return;
     try {
       const { value } = await ElMessageBox.prompt('请输入新名称', '重命名', {
         confirmButtonText: '确定',
@@ -81,7 +73,6 @@ export function useFileActions() {
       });
       if (value) {
         await store.renameEntry(sel, value);
-        ElMessage.success('已重命名');
       }
     } catch {
       /* 取消 */

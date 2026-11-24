@@ -1,7 +1,7 @@
 [package]
 name = "wmfold"
-version = "0.3.4"
-description = "WMFold - 化学文件资源管理器"
+version = "0.3.47"
+description = "wmfold - 化学文件资源管理器"
 authors = ["Shi Xiaofei"]
 edition = "2021"
 
@@ -14,6 +14,11 @@ edition = "2021"
 name = "wmfold_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[[bin]]
+# 合并启动器：`wmfold` 启动桌面端，`wmfold -cli` 输出 JSON
+name = "wmfold"
+path = "src/main.rs"
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
@@ -22,13 +27,31 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-regex = "1"
-chrono = { version = "0.4", features = ["serde"] }
-trash = "5"
-rayon = "1.5"
+# 与 -cli 版共享的核心逻辑（化学解析 / 目录列表 / 文件操作 / 数据模型）
+wmfold-core = { path = "../wmfold-core" }
+# 机器接口（合并进 wmfold：`wmfold -cli`）
+wmfold-cli = { path = "../wmfold-cli" }
+tauri-plugin-single-instance = "2.5.5"
+tauri-plugin-updater = "2.14.1"
+tauri-plugin-process = "2.4.0"
+# AI 对话：调用 DeepSeek（OpenAI 兼容）接口。使用 rustls + ring，
+# 与 tauri-plugin-updater 共用同一套 TLS 依赖，不引入 OpenSSL/Schannel。
+reqwest = { version = "0.13", default-features = false, features = ["blocking", "json", "rustls-no-provider"] }
+rustls = { version = "0.23", features = ["ring"] }
 
-# 使用用户自研的波函数分析库解析常见的化学文件
-rswfn = { path = "../../rswfn" }
+[target.'cfg(windows)'.dependencies]
+# Windows 专用 API：控制台分离（GUI 模式）、DPAPI（远程密码）、窗口定位、驱动器枚举
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_Security_Cryptography",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Console",
+    "Win32_System_Memory",
+    "Win32_System_Threading",
+    "Win32_UI_WindowsAndMessaging",
+] }
+winreg = "0.55"
 
 [profile.dev]
 incremental = true

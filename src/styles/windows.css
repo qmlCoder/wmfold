@@ -13,6 +13,7 @@
   --border: #e0e0e0;
   --chrome-bg: #f0f0f0;
   --table-bg: #ffffff;
+  --wm-titlebar-height: 32px;
 }
 
 * {
@@ -65,24 +66,31 @@ button {
   background: var(--table-bg);
 }
 
-/* ---------- 命令栏（ribbon 风格） ---------- */
+.wmfold-filearea {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- 命令栏（ribbon 风格，图标按钮，文字改为悬停提示） ---------- */
 .wm-cmd {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 4px 8px;
+  padding: 3px 8px;
   background: var(--chrome-bg);
   border-bottom: 1px solid var(--border);
 }
 
 .wm-cmd .cmd-btn {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  min-width: 52px;
-  height: 46px;
-  padding: 4px 6px;
+  min-width: 32px;
+  height: 30px;
+  padding: 3px 8px;
   border: none;
   background: transparent;
   border-radius: 6px;
@@ -104,16 +112,20 @@ button {
   pointer-events: none;
 }
 
+/* 扫描按钮即使当前不可用也保留悬停提示（title 不会因 pointer-events:none 失效） */
+.wm-cmd .cmd-btn.wm-scan-btn.is-disabled {
+  pointer-events: auto;
+  cursor: not-allowed;
+}
+
 .wm-cmd .cmd-btn .el-icon {
-  font-size: 18px;
+  font-size: 17px;
   color: var(--accent);
 }
 
+/* 图标按钮下方不再显示文字，名称由 title 悬停提示 */
 .wm-cmd .cmd-btn span {
-  font-size: 11px;
-  margin-top: 2px;
-  line-height: 1;
-  white-space: nowrap;
+  display: none;
 }
 
 .wm-cmd .cmd-divider {
@@ -238,6 +250,41 @@ button {
 
 .wm-side-item .el-icon {
   color: #888;
+}
+
+/* 快速访问项名称：过长时省略，给右侧“取消固定”按钮留出空间 */
+.wm-side-item .wm-side-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 用户固定项在悬停时出现的“取消固定”按钮 */
+.wm-side-item .wm-side-unpin {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #888;
+  font-size: 14px;
+  line-height: 16px;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.wm-side-item:hover .wm-side-unpin,
+.wm-side-item .wm-side-unpin:focus-visible {
+  opacity: 1;
+}
+
+.wm-side-item .wm-side-unpin:hover {
+  background: #e2e2e2;
+  color: #333;
 }
 
 /* ---------- 文件表格 ---------- */
@@ -395,6 +442,22 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+.wm-chem-job {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'Cascadia Code', Consolas, 'Courier New', monospace;
+  font-size: 12px;
+  color: #4a4f57;
+}
+
+.wm-chem-normalend {
+  font-size: 12px;
+  color: #4a4f57;
+}
+
 /* ---------- 状态栏 ---------- */
 .wm-statusbar {
   display: flex;
@@ -413,6 +476,36 @@ button {
   flex: 1;
 }
 
+/* 化学信息分批解析进度 */
+.wm-status-chem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2f6db5;
+  white-space: nowrap;
+}
+
+.wm-status-chem strong {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.wm-status-chem-track {
+  width: 72px;
+  height: 5px;
+  border-radius: 3px;
+  background: #dbe6f3;
+  overflow: hidden;
+}
+
+.wm-status-chem-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.15s linear;
+}
+
 /* ---------- 空状态 ---------- */
 .wm-empty {
   display: flex;
@@ -429,25 +522,90 @@ button {
   color: #ccc;
 }
 
-/* ---------- 详情面板 ---------- */
-.wm-chempanel {
-  width: 280px;
+/* ---------- 右侧面板（预览 / 作业查询） ---------- */
+.wm-rightpanel {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
   border-left: 1px solid var(--border);
   background: #fafbfc;
+  overflow: hidden;
+}
+
+.wm-rightpanel-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 30px;
+  flex-shrink: 0;
+  padding: 0 8px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #f3f4f6;
+  user-select: none;
+}
+
+.wm-rightpanel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+}
+
+.wm-rightpanel-tab {
+  border: none;
+  background: transparent;
+  color: #666;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+}
+
+.wm-rightpanel-tab:hover {
+  color: var(--accent, #0067c0);
+}
+
+.wm-rightpanel-tab.is-active {
+  color: var(--accent, #0067c0);
+  background: #fafbfc;
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 var(--accent, #0067c0);
+}
+
+.wm-rightpanel-spacer {
+  flex: 1;
+}
+
+.wm-rightpanel-close {
+  border: none;
+  background: transparent;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+
+.wm-rightpanel-close:hover {
+  background: #e8e8e8;
+  color: #333;
+}
+
+.wm-rightpanel-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.wm-chempanel-content {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 12px;
 }
 
-.wm-chempanel-header {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.wm-chempanel .prop-row {
+.wm-chempanel-content .prop-row {
   display: flex;
   justify-content: space-between;
   padding: 5px 0;
@@ -455,13 +613,183 @@ button {
   font-size: 13px;
 }
 
-.wm-chempanel .prop-row .k {
+.wm-chempanel-content .prop-row .k {
   color: #666;
 }
 
-.wm-chempanel .prop-row .v {
+.wm-chempanel-content .prop-row .v {
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+}
+
+/* 预览：Gaussian route 可能很长，允许换行 */
+.wm-chempanel-content .wm-job-row {
+  align-items: flex-start;
+}
+
+.wm-chempanel-content .wm-job-row .v {
+  max-width: 72%;
+  text-align: right;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+/* 预览：three.js 分子三维结构（最上方，高度可拖动） */
+.wm-mol-viewer {
+  margin: 0 0 14px;
+  padding: 0 0 8px;
+  border-bottom: 1px dashed #e4e7ed;
+}
+
+.wm-mol-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.wm-mol-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #444;
+}
+
+.wm-mol-count {
+  font-size: 11px;
+  color: #999;
+  font-variant-numeric: tabular-nums;
+}
+
+.wm-mol-reset {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--accent, #0067c0);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.wm-mol-reset:hover {
+  background: #eef5ff;
+}
+
+.wm-mol-stage {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  overflow: hidden;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 38%, #ffffff 0%, #f7f8fa 58%, #eef0f3 100%);
+}
+
+.wm-mol-stage canvas {
+  display: block;
+}
+
+.wm-mol-resizer {
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.wm-mol-resizer::before {
+  content: "";
+  width: 38px;
+  height: 3px;
+  border-radius: 2px;
+  background: #d4d8df;
+  transition: background 0.15s;
+}
+
+.wm-mol-resizer:hover::before {
+  background: var(--accent, #0067c0);
+}
+
+.wm-mol-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #999;
+  background: rgba(255, 255, 255, 0.72);
+  pointer-events: none;
+}
+
+.wm-mol-hint {
+  margin-top: 4px;
+  font-size: 10px;
+  color: #aaa;
+  text-align: center;
+}
+
+/* 远程机器设置：作业查询 */
+.wm-remote-job {
+  border-top: 1px dashed #e4e7ed;
+  padding-top: 8px;
+}
+
+.wm-remote-job-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.wm-remote-job-row .el-input {
+  flex: 1;
+}
+
+.wm-remote-job-unit {
+  color: #888;
+  font-size: 12px;
+}
+
+.wm-remote-job-hint {
+  margin-top: 4px;
+  color: #999;
+  font-size: 12px;
+}
+
+/* 文件列表 / 预览窗格之间的可拖动分隔条 */
+.wm-splitter {
+  width: 5px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+}
+
+.wm-splitter::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  width: 1px;
+  background: var(--border);
+}
+
+.wm-splitter:hover {
+  background: var(--hover-accent);
+}
+
+.wm-splitter:hover::after {
+  background: var(--accent);
 }
 
 /* ---------- 右键菜单 ---------- */
@@ -469,6 +797,8 @@ button {
   position: fixed;
   z-index: 3000;
   min-width: 200px;
+  max-height: calc(100vh - 12px);
+  overflow-y: auto;
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -493,6 +823,15 @@ button {
 
 .wm-menu .menu-item.is-danger {
   color: #d93025;
+}
+
+.wm-menu .menu-item.is-disabled {
+  color: #9a9a9a;
+  cursor: default;
+}
+
+.wm-menu .menu-item.is-disabled:hover {
+  background: transparent;
 }
 
 .wm-menu .menu-sep {
@@ -563,6 +902,11 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+.wm-filter-count.is-ratio {
+  min-width: auto;
+  padding: 0 6px;
+}
+
 .wm-filter.is-active .wm-filter-count {
   background: rgba(255, 255, 255, 0.28);
   color: #fff;
@@ -612,4 +956,849 @@ button {
 
 .wm-errorbar:hover {
   background: #ffe7e5;
+}
+
+/* 侧边栏：远程机器的副标题与“添加”项 */
+.wm-side-sub {
+  margin-left: auto;
+  color: #999;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+.wm-side-add {
+  color: #666;
+}
+
+.wm-status-machine {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #555;
+  margin-right: 8px;
+  padding-right: 8px;
+  border-right: 1px solid #ddd;
+}
+
+/* 设置：展示信息 / 远程机器 */
+.wm-settings-hint {
+  margin: 0 0 10px;
+  color: #888;
+  font-size: 12px;
+}
+
+.wm-remote-settings {
+  display: flex;
+  gap: 18px;
+  min-height: 320px;
+}
+
+.wm-remote-machines {
+  width: 260px;
+  flex-shrink: 0;
+  border-right: 1px solid #eee;
+  padding-right: 14px;
+}
+
+.wm-remote-machines-title,
+.wm-remote-form-title {
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.wm-remote-machine {
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.wm-remote-machine:hover {
+  background: #f5f7fa;
+}
+
+.wm-remote-machine.is-active {
+  background: #e8f0fe;
+}
+
+.wm-remote-machine-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.wm-remote-machine small {
+  color: #999;
+}
+
+.wm-remote-empty {
+  color: #999;
+  font-size: 12px;
+  padding: 6px 0;
+}
+
+.wm-remote-form {
+  flex: 1;
+  min-width: 0;
+}
+
+.wm-remote-hint {
+  margin-top: 12px;
+  color: #999;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.wm-remote-hint code {
+  background: #f5f5f5;
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+.wm-remote-current {
+  margin-top: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #f0f9eb;
+  border: 1px solid #e1f3d8;
+  color: #3f6600;
+  font-size: 12px;
+}
+
+/* 设置：程序设置 */
+.wm-program-settings {
+  padding: 4px 2px;
+}
+
+.wm-program-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px 16px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: #fafafa;
+  max-width: 640px;
+  margin-bottom: 10px;
+}
+
+.wm-program-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1b1b1b;
+  margin-bottom: 4px;
+}
+
+.wm-program-desc {
+  font-size: 12px;
+  color: #888;
+  line-height: 1.6;
+}
+
+.wm-update-message {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #555;
+}
+
+.wm-update-progress {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--accent, #0067c0);
+}
+
+.wm-update-notes {
+  margin-top: 6px;
+  padding: 8px 10px;
+  max-height: 120px;
+  overflow: auto;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid #eee;
+  color: #666;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.wm-update-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ---------- 递归读取进度条 ---------- */
+.wm-scanbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 30px;
+  padding: 0 10px;
+  flex-shrink: 0;
+  background: #eef6ff;
+  border-bottom: 1px solid #d8e8fb;
+  font-size: 12px;
+  color: #2c4a6b;
+  user-select: none;
+}
+
+.wm-scanbar-icon {
+  color: #0067c0;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.wm-scanbar-text {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.wm-scanbar-note {
+  color: #7a8fa6;
+}
+
+.wm-scanbar-current {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #8aa0b8;
+  font-size: 11px;
+  font-family: 'Cascadia Code', Consolas, monospace;
+}
+
+.wm-scanbar-track {
+  width: 130px;
+  height: 4px;
+  border-radius: 2px;
+  background: #d5e5f7;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.wm-scanbar-fill {
+  height: 100%;
+  width: 100%;
+  border-radius: 2px;
+  background: #6bbf6b;
+}
+
+.wm-scanbar-track.is-active .wm-scanbar-fill {
+  width: 40%;
+  background: #0067c0;
+  animation: wm-scan-indeterminate 1.15s ease-in-out infinite;
+}
+
+@keyframes wm-scan-indeterminate {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+.wm-scanbar-btn {
+  border: 1px solid #b9d4f0;
+  background: #fff;
+  color: #0067c0;
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.wm-scanbar-btn:hover {
+  background: #e5f1ff;
+}
+
+.wm-status-recursive {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #2f6db5;
+}
+
+.wm-file-reldir {
+  font-size: 12px;
+  color: #8a8f98;
+  font-family: 'Cascadia Code', Consolas, monospace;
+}
+
+.wm-cmd .cmd-btn.is-active {
+  background: var(--hover-accent);
+}
+
+/* ---------- AI 对话 ---------- */
+.wm-ai {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: #fff;
+}
+
+.wm-ai-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #eef0f3;
+  background: #fafbfc;
+}
+
+.wm-ai-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: #999;
+}
+
+.wm-ai-key.is-ok {
+  color: #2e7d32;
+}
+
+.wm-ai-key.is-missing {
+  color: #b26a00;
+}
+
+.wm-ai-link {
+  border: none;
+  background: transparent;
+  color: #0067c0;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.wm-ai-link:hover {
+  background: #e8f0fe;
+}
+
+.wm-ai-scope {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: #8a8f98;
+  border-bottom: 1px solid #f0f2f5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wm-ai-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 10px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wm-ai-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px 8px;
+  color: #8a8f98;
+}
+
+.wm-ai-empty-icon {
+  font-size: 34px;
+  color: #c3d0e0;
+  margin-bottom: 6px;
+}
+
+.wm-ai-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #33475b;
+}
+
+.wm-ai-empty-desc {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 6px 0 10px;
+}
+
+.wm-ai-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.wm-ai-suggestions button {
+  text-align: left;
+  padding: 6px 9px;
+  border: 1px solid #e3e8ef;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #3b4a5a;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.wm-ai-suggestions button:hover {
+  border-color: #b9d4f0;
+  background: #eef6ff;
+  color: #0067c0;
+}
+
+.wm-ai-msg {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f7f8fa;
+  border: 1px solid #eef0f3;
+}
+
+.wm-ai-msg.is-user {
+  background: #eaf3ff;
+  border-color: #d6e6ff;
+}
+
+.wm-ai-role {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7b8794;
+  margin-bottom: 4px;
+}
+
+.wm-ai-content {
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: #222;
+  word-break: break-word;
+}
+
+.wm-ai-content .wm-ai-p {
+  margin: 2px 0;
+  white-space: pre-wrap;
+}
+
+.wm-ai-content .wm-ai-h {
+  font-weight: 700;
+  margin: 8px 0 3px;
+  color: #1b2b3a;
+}
+
+.wm-ai-content .wm-ai-li {
+  padding-left: 4px;
+  white-space: pre-wrap;
+}
+
+.wm-ai-content ul {
+  margin: 3px 0;
+  padding-left: 18px;
+}
+
+.wm-ai-content code {
+  background: #eef1f5;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: 'Cascadia Code', Consolas, monospace;
+  font-size: 11.5px;
+}
+
+.wm-ai-content pre.wm-ai-code {
+  margin: 6px 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #1e2430;
+  color: #e6edf3;
+  overflow-x: auto;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.wm-ai-content pre.wm-ai-code code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: 11.5px;
+}
+
+.wm-ai-steps {
+  margin-bottom: 6px;
+  padding-left: 6px;
+  border-left: 2px solid #dbe4ee;
+}
+
+.wm-ai-step {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 2px 0;
+  font-size: 11px;
+  color: #66707b;
+}
+
+.wm-ai-step-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.wm-ai-step.is-ok .wm-ai-step-icon {
+  color: #4caf50;
+}
+
+.wm-ai-step.is-error .wm-ai-step-icon {
+  color: #d9534f;
+}
+
+.wm-ai-step-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wm-ai-step-summary {
+  margin-left: auto;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #98a2ad;
+  flex-shrink: 0;
+}
+
+.wm-ai-error {
+  margin-top: 4px;
+  padding: 5px 7px;
+  border-radius: 4px;
+  background: #fff1f0;
+  color: #c0392b;
+  font-size: 11.5px;
+  white-space: pre-wrap;
+}
+
+.wm-ai-thinking {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 2px 10px;
+  font-size: 11.5px;
+  color: #8a8f98;
+}
+
+.wm-ai-input {
+  flex-shrink: 0;
+  padding: 8px 10px;
+  border-top: 1px solid #eef0f3;
+  background: #fafbfc;
+}
+
+.wm-ai-input textarea {
+  width: 100%;
+  resize: none;
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 12.5px;
+  line-height: 1.5;
+  outline: none;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.wm-ai-input textarea:focus {
+  border-color: #0067c0;
+}
+
+.wm-ai-input-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 5px;
+}
+
+.wm-ai-hint {
+  font-size: 11px;
+  color: #98a2ad;
+}
+
+.wm-ai-send {
+  border: none;
+  border-radius: 5px;
+  padding: 4px 14px;
+  background: #0067c0;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.wm-ai-send:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.is-spinning {
+  animation: wm-spin 1s linear infinite;
+}
+
+@keyframes wm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 设置：AI 对话 */
+.wm-ai-setting-status {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #999;
+}
+
+.wm-ai-setting-status.is-ok {
+  color: #2e7d32;
+}
+
+.wm-ai-setting-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.wm-ai-setting-message {
+  font-size: 12px;
+  color: #2e7d32;
+  word-break: break-word;
+}
+
+.wm-ai-setting-message.is-error {
+  color: #c0392b;
+}
+
+/* ---------- 虚拟滚动表格（Element Plus TableV2） ---------- */
+.wm-vtable-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.wm-table .el-table-v2 {
+  font-size: 13px;
+  color: #1b1b1b;
+}
+
+.wm-table .el-table-v2__header-cell {
+  background: #f5f6f7;
+  color: #555;
+  font-size: 12px;
+  font-weight: 600;
+  border-right: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--border);
+}
+
+.wm-table .el-table-v2__row {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.wm-table .el-table-v2__row:hover {
+  background: #f5f9ff;
+}
+
+.wm-table .el-table-v2__row.is-selected {
+  background: var(--selected);
+}
+
+.wm-table .el-table-v2__row.is-selected:hover {
+  background: var(--selected-hover);
+}
+
+.wm-table .el-table-v2__row-cell {
+  padding: 0 8px;
+  overflow: hidden;
+}
+
+.wm-table .el-table-v2__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.wm-v2-cell {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wm-v2-cell.is-right {
+  text-align: right;
+}
+
+.wm-v2-th {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+}
+
+.wm-v2-th.is-sortable {
+  cursor: pointer;
+}
+
+.wm-v2-th.is-right {
+  justify-content: flex-end;
+}
+
+.wm-v2-th-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wm-v2-sort {
+  font-size: 10px;
+  line-height: 1;
+  color: #888;
+}
+
+.wm-v2-sort-idle {
+  color: #c0c4cc;
+}
+
+.wm-v2-checkhead,
+.wm-v2-checkcell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* AI 回复中的 Markdown 表格 */
+.wm-ai-table-wrap {
+  max-width: 100%;
+  margin: 6px 0;
+  overflow-x: auto;
+}
+
+.wm-ai-table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.wm-ai-table th,
+.wm-ai-table td {
+  border: 1px solid #dfe5ec;
+  padding: 4px 6px;
+  vertical-align: top;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.wm-ai-table th {
+  background: #f3f6fa;
+  color: #33475b;
+  font-weight: 600;
+}
+
+.wm-ai-table tbody tr:nth-child(even) td {
+  background: #fafbfc;
+}
+
+/* AI 工具结果：可点击定位到文件列表 */
+.wm-ai-results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 150px;
+  margin: 2px 0 5px 17px;
+  overflow-y: auto;
+}
+
+.wm-ai-result {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+  padding: 1px 6px;
+  border: 1px solid #d9e2ec;
+  border-radius: 4px;
+  background: #fff;
+  color: #2f5f8f;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+.wm-ai-result:hover {
+  border-color: #a9c7e8;
+  background: #eef6ff;
+}
+
+.wm-ai-result .el-icon {
+  flex-shrink: 0;
+}
+
+.wm-ai-result-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wm-ai-result-more {
+  padding: 1px 2px;
+  border: none;
+  background: transparent;
+  color: #7b8794;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+.wm-ai-result-more:hover {
+  color: #0067c0;
+}
+
+/* AI 回答正文中的可点击路径 */
+.wm-ai-content .wm-ai-path {
+  padding: 0 1px;
+  border-radius: 2px;
+  color: #0067c0;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.wm-ai-content .wm-ai-path:hover {
+  background: #e8f2ff;
+}
+
+.wm-ai-content .wm-ai-path:focus {
+  outline: 1px solid #7ab3ea;
+  outline-offset: 1px;
 }

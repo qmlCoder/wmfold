@@ -17,15 +17,17 @@ export const CHEM_DEFS: Record<string, ChemColDef> = {
   nBasis: { label: '基组函数', minWidth: 70, sortable: true, align: 'right' },
   molW: { label: '分子量', minWidth: 78, sortable: true, align: 'right' },
   energy: { label: '能量 (a.u.)', minWidth: 86, sortable: true, align: 'right' },
+  job: { label: '作业', minWidth: 240, sortable: false },
+  normalEnd: { label: '正常结束', minWidth: 90, sortable: false },
 };
 
 /** 「全部」默认展示的化学列 */
-export const CHEM_ALL = ['formula', 'nAtoms', 'charge', 'multip', 'molW', 'energy'];
+export const CHEM_ALL = ['formula', 'nAtoms', 'charge', 'multip', 'molW', 'energy', 'job', 'normalEnd'];
 
 /** 每种具体类型可提供的化学列（作为「有限表头」的可选项） */
 export const CHEM_BY_KIND: Record<string, string[]> = {
-  gjf: ['formula', 'nAtoms', 'charge', 'multip', 'molW'],
-  log: ['formula', 'nAtoms', 'charge', 'multip', 'energy', 'molW'],
+  gjf: ['formula', 'nAtoms', 'charge', 'multip', 'molW', 'job'],
+  log: ['formula', 'nAtoms', 'charge', 'multip', 'energy', 'molW', 'job', 'normalEnd'],
   out: ['formula', 'nAtoms', 'charge', 'multip', 'energy', 'molW'],
   fch: ['formula', 'nAtoms', 'charge', 'multip', 'nBasis', 'molW'],
   inp: ['formula', 'nAtoms', 'charge', 'multip', 'molW'],

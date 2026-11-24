@@ -1,28 +1,35 @@
 {
   "name": "wmfold",
   "private": true,
-  "version": "0.3.4",
-  "description": "WMFold - 化学文件资源管理器 (Tauri 2 + Vue)",
+  "version": "0.3.47",
+  "description": "wmfold - 化学文件资源管理器 (Tauri 2 + Vue)",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "build:server": "node scripts/build-server.mjs",
+    "test:cli": "cargo test --manifest-path wmfold-cli/Cargo.toml",
     "bump:version": "node scripts/bump-version.mjs",
     "rename:exe": "node scripts/rename-exe.mjs",
-    "build:app": "npm run bump:version && npm run tauri build && npm run rename:exe"
+    "build:app": "node scripts/build-app.mjs",
+    "publish:update": "node scripts/publish-update.mjs"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
-    "@tauri-apps/api": "^2",
+    "@tauri-apps/api": "^2.12.4",
     "@tauri-apps/plugin-opener": "^2.5.5",
+    "@tauri-apps/plugin-process": "^2.4.0",
+    "@tauri-apps/plugin-updater": "^2.14.1",
     "element-plus": "^2.14.5",
     "pinia": "^4.0.3",
+    "three": "^0.187.0",
     "vue": "^3.5.13"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2",
+    "@tauri-apps/cli": "^2.12.4",
+    "@types/three": "^0.187.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "typescript": "~5.6.2",
     "vite": "^6.0.3",

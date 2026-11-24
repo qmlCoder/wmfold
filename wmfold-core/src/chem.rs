@@ -8,6 +8,11 @@
 //! 因此这里做了「预检（避免 exit）+ catch_unwind（拦截 panic）+ 结果降级」
 //! 三层防护，任何失败都只影响单个文件的元数据，不影响资源管理器本身。
 
+/// 化学解析缓存格式版本。
+///
+/// 修改 `ChemMeta` 字段、解析逻辑或 rswfn 读取行为时递增，旧缓存会自动失效。
+pub const CHEM_CACHE_VERSION: u32 = 1;
+
 use std::panic::AssertUnwindSafe;
 
 use serde::Serialize;
@@ -18,7 +23,7 @@ use rswfn::reader::{
     OutReader, Reader, SdfReader, XyzReader,
 };
 
-use crate::models::ChemMeta;
+use crate::models::{ChemMeta, MolAtom, MolStructure};
 
 /// 扩展名到化学类型代码的映射
 pub fn kind_from_ext(ext: &str) -> Option<&'static str> {
@@ -91,6 +96,17 @@ fn precheck(path: &str, kind: &str) -> bool {
         }
         _ => true,
     }
+}
+
+/// 用 rswfn 的 `LogReader::read_normalend` 判断日志是否正常结束。
+///
+/// `read_normalend` 直接取最后一行；空文件会越界 panic，因此仍走 catch_unwind。
+fn read_log_normal_end(path: &str) -> Option<bool> {
+    std::panic::catch_unwind(AssertUnwindSafe(|| {
+        let reader = LogReader::new(path);
+        reader.read_normalend()
+    }))
+    .ok()
 }
 
 /// 用 rswfn 读取「原子 + 基组」（不读取分子轨道系数，避免 exit）。
@@ -311,6 +327,65 @@ fn normalize_formula(f: &str) -> String {
     out
 }
 
+/// 判断一行是否为 Gaussian 路由段的分隔线（例如 ` -----`）。
+fn is_dash_line(line: &str) -> bool {
+    let trimmed = line.trim();
+    trimmed.len() >= 3 && trimmed.chars().all(|c| c == '-')
+}
+
+/// 读取 Gaussian 作业关键词（route 段）。
+///
+/// - gjf：从第一个 `#` 行开始，读到空行为止，保留续行；
+/// - log：从第一个 ` #` 行开始，读到 `-----` 分隔线为止。
+///
+/// 只做文本提取，不构造 rswfn 读取器，因此不会触发读取器的 panic / exit；
+/// 返回前统一折叠空白，方便在预览面板中展示。
+pub fn read_job(path: &str) -> Option<String> {
+    let kind = std::path::Path::new(path)
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(kind_from_ext)
+        .flatten()
+        .unwrap_or("");
+    if kind != "gjf" && kind != "log" {
+        return None;
+    }
+
+    let lines = read_file_lines(path);
+    let mut parts: Vec<String> = Vec::new();
+    let mut in_route = false;
+    for line in &lines {
+        if kind == "gjf" {
+            if !in_route {
+                if line.trim_start().starts_with('#') {
+                    in_route = true;
+                    parts.push(line.trim().trim_start_matches('#').trim().to_string());
+                }
+            } else if line.trim().is_empty() {
+                break;
+            } else {
+                parts.push(line.trim().trim_start_matches('#').trim().to_string());
+            }
+        } else if !in_route {
+            if line.starts_with(" #") {
+                in_route = true;
+                parts.push(line.trim().trim_start_matches('#').trim().to_string());
+            }
+        } else if is_dash_line(line) {
+            break;
+        } else {
+            parts.push(line.trim().trim_start_matches('#').trim().to_string());
+        }
+    }
+
+    let job = parts.join(" ").split_whitespace().collect::<Vec<_>>().join(" ");
+    if job.is_empty() {
+        None
+    } else {
+        Some(job)
+    }
+}
+
 /// 读取单个化学文件并返回完整元数据。
 fn parse_chem(path: &str) -> ChemMeta {
     let kind = std::path::Path::new(path)
@@ -333,9 +408,24 @@ fn parse_chem(path: &str) -> ChemMeta {
             n_basis: 0,
             mol_w: 0.0,
             energy: None,
+            job: None,
+            normal_end: None,
             ok: false,
         };
     }
+
+    // gjf / log 额外提取 Gaussian route 关键词（即使坐标解析失败也保留作业信息）
+    let job = if kind == "gjf" || kind == "log" {
+        read_job(path)
+    } else {
+        None
+    };
+    // log 额外读取是否正常结束（同样即使坐标解析失败也保留）
+    let normal_end = if kind == "log" {
+        read_log_normal_end(path)
+    } else {
+        None
+    };
 
     let parsed = read_atoms_basis(path, kind);
     match parsed {
@@ -361,6 +451,8 @@ fn parse_chem(path: &str) -> ChemMeta {
                 n_basis,
                 mol_w,
                 energy: extract_energy(path),
+                job: job.clone(),
+                normal_end,
                 ok: true,
             }
         }
@@ -378,6 +470,8 @@ fn parse_chem(path: &str) -> ChemMeta {
                 n_basis: 0,
                 mol_w: 0.0,
                 energy: None,
+                job,
+                normal_end,
                 ok: false,
             }
         }
@@ -385,16 +479,98 @@ fn parse_chem(path: &str) -> ChemMeta {
 }
 
 /// 批量读取化学文件元数据（并行）。
-#[tauri::command]
-pub fn read_chem_batch(paths: Vec<String>) -> Vec<ChemMeta> {
+pub fn read_chem_batch(paths: &[String]) -> Vec<ChemMeta> {
     use rayon::prelude::*;
     paths.par_iter().map(|p| parse_chem(p)).collect()
 }
 
 /// 读取单个化学文件元数据。
-#[tauri::command]
-pub fn read_chem(path: String) -> ChemMeta {
-    parse_chem(&path)
+pub fn read_chem(path: &str) -> ChemMeta {
+    parse_chem(path)
+}
+
+/// 读取分子的三维结构（原子坐标 + 成键），供前端 three.js 预览。
+///
+/// 与 [`parse_chem`] 一样走 `read_atoms_basis` 的安全通道，任何解析失败都返回
+/// `ok: false` 的空结构，不会让 rswfn 的 panic / exit 影响整个应用。
+pub fn read_structure(path: &str) -> MolStructure {
+    let kind = std::path::Path::new(path)
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(kind_from_ext)
+        .flatten()
+        .unwrap_or("");
+
+    if kind.is_empty() {
+        return MolStructure {
+            ok: false,
+            atoms: Vec::new(),
+            bonds: Vec::new(),
+        };
+    }
+
+    let Some((atoms, _basis)) = read_atoms_basis(path, kind) else {
+        return MolStructure {
+            ok: false,
+            atoms: Vec::new(),
+            bonds: Vec::new(),
+        };
+    };
+
+    if atoms.len() == 0 {
+        return MolStructure {
+            ok: false,
+            atoms: Vec::new(),
+            bonds: Vec::new(),
+        };
+    }
+
+    let syms = atoms.syms();
+    let xyz_ang = atoms.xyzs_ang();
+    let mol_atoms: Vec<MolAtom> = syms
+        .iter()
+        .zip(xyz_ang.iter())
+        .map(|(element, [x, y, z])| MolAtom {
+            element: element.clone(),
+            x: *x,
+            y: *y,
+            z: *z,
+        })
+        .collect();
+
+    // atoms.bonds 由 rswfn 在构建 Atoms 时按「距离 < 半径和 * 1.1」计算；
+    // 少数读取器用 add() 逐个添加原子，此时 bonds 可能为空，这里补算一次。
+    let mut bonds = atoms
+        .bonds
+        .lock()
+        .map(|b| b.clone())
+        .unwrap_or_default();
+    if bonds.is_empty() && atoms.len() > 1 {
+        let xyz_bohr = atoms.xyzs();
+        let rads = atoms.rads();
+        for i in 0..atoms.len() - 1 {
+            for j in i + 1..atoms.len() {
+                let [xi, yi, zi] = xyz_bohr[i];
+                let [xj, yj, zj] = xyz_bohr[j];
+                let dist =
+                    ((xi - xj).powi(2) + (yi - yj).powi(2) + (zi - zj).powi(2)).sqrt();
+                let limit = if rads[i] > 0.0 && rads[j] > 0.0 {
+                    (rads[i] + rads[j]) * 1.1
+                } else {
+                    3.2
+                };
+                if dist < limit {
+                    bonds.push([i, j]);
+                }
+            }
+        }
+    }
+
+    MolStructure {
+        ok: true,
+        atoms: mol_atoms,
+        bonds,
+    }
 }
 
 #[cfg(test)]
@@ -440,7 +616,30 @@ mod tests {
         assert_eq!(m.n_atoms, 3);
         assert_eq!(m.charge, 0);
         assert_eq!(m.multip, 1);
+        assert_eq!(m.job.as_deref(), Some("b3lyp/6-31g(d) opt"));
         std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn job_reads_gjf_and_log_routes() {
+        let gjf = tmp_file(
+            "gjf",
+            "%chk=w.chk\n#p b3lyp/6-31g(d)\n opt freq\n\nwater\n\n0 1\nO 0.0 0.0 0.0\n",
+        );
+        assert_eq!(
+            read_job(&gjf).as_deref(),
+            Some("p b3lyp/6-31g(d) opt freq")
+        );
+        let log = tmp_file(
+            "log",
+            " #p b3lyp/6-31g(d) opt freq\n ------------\n SCF Done:  E(RB3LYP) =  -76.4\n",
+        );
+        assert_eq!(
+            read_job(&log).as_deref(),
+            Some("p b3lyp/6-31g(d) opt freq")
+        );
+        std::fs::remove_file(&gjf).ok();
+        std::fs::remove_file(&log).ok();
     }
 
     #[test]
@@ -456,6 +655,28 @@ mod tests {
     }
 
     #[test]
+    fn log_normal_end_flag() {
+        let ok = tmp_file(
+            "log",
+            " #p b3lyp/6-31g(d)\n SCF Done:  E(RB3LYP) =  -76.4\n Normal termination of Gaussian 16 at Thu Jan  1 00:00:00 2026.\n",
+        );
+        assert_eq!(read_log_normal_end(&ok), Some(true));
+
+        let bad = tmp_file(
+            "log",
+            " #p b3lyp/6-31g(d)\n Error termination via Lnk1e at Thu Jan  1 00:00:00 2026.\n",
+        );
+        assert_eq!(read_log_normal_end(&bad), Some(false));
+
+        let empty = tmp_file("log", "");
+        assert_eq!(read_log_normal_end(&empty), None);
+
+        std::fs::remove_file(&ok).ok();
+        std::fs::remove_file(&bad).ok();
+        std::fs::remove_file(&empty).ok();
+    }
+
+    #[test]
     fn energy_gaussian_log() {
         let path = tmp_file(
             "log",
@@ -465,6 +686,28 @@ mod tests {
         assert!(e.is_some());
         assert!((e.unwrap() - -76.4106001231).abs() < 1e-6);
         std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn structure_xyz_water() {
+        let path = tmp_file(
+            "xyz",
+            "3\nwater\nO 0.0 0.0 0.000\nH 0.757 0.586 0.000\nH -0.757 0.586 0.000\n",
+        );
+        let s = read_structure(&path);
+        assert!(s.ok);
+        assert_eq!(s.atoms.len(), 3);
+        assert_eq!(s.atoms[0].element, "O");
+        assert!((s.atoms[1].x - 0.757).abs() < 0.01);
+        assert_eq!(s.bonds.len(), 2);
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn structure_missing_file_is_not_ok() {
+        let s = read_structure("E:\\definitely-not-a-real-wmfold-file.xyz");
+        assert!(!s.ok);
+        assert!(s.atoms.is_empty());
     }
 
     #[test]

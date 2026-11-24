@@ -7,7 +7,9 @@ const store = useExplorer();
 
 const canBack = computed(() => store.historyIndex > 0);
 const canForward = computed(() => store.historyIndex < store.history.length - 1);
-const canUp = computed(() => store.currentPath !== THIS_PC);
+const canUp = computed(() =>
+  store.isRemote ? store.currentPath.replace(/\/+$/, '') !== '' : store.currentPath !== THIS_PC,
+);
 
 const editMode = ref(false);
 const editValue = ref('');

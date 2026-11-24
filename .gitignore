@@ -25,7 +25,16 @@ dist-ssr
 
 # Tauri
 src-tauri/target
+src-tauri/target-*
 src-tauri/gen*
+.tauri/
+
+# 自动更新发布暂存（含安装包 / 清单）
+update-staging/
+
+# 共享核心 / 终端版构建产物
+wmfold-core/target
+wmfold-cli/target
 
 # GPUI 归档实现（不参与当前构建）
 legacy-gpui/target

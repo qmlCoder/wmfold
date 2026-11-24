@@ -1,0 +1,23 @@
+[package]
+name = "wmfold-cli"
+version = "0.2.2"
+edition = "2021"
+description = "WMFold 机器接口：`wmfold -cli` 的 JSON 输出（桌面端 SSH 远程浏览 / 脚本调用共用）"
+authors = ["Shi Xiaofei"]
+license = "MIT"
+
+[lib]
+name = "wmfold_cli"
+path = "src/lib.rs"
+
+# 服务器 / Linux 上单独编译的静态二进制（桌面端会把产物作为 wmfold-server 随包上传）
+[[bin]]
+name = "wmfold-cli"
+path = "src/main.rs"
+
+[dependencies]
+# 与桌面版共享的化学解析 / 目录列表 / 数据模型
+wmfold-core = { path = "../wmfold-core" }
+# `-cli` 模式的 JSON 输出
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

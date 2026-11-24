@@ -1,7 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "WMFold",
-  "version": "0.3.4",
+  "productName": "wmfold",
+  "mainBinaryName": "wmfold",
+  "version": "0.3.47",
   "identifier": "com.wmfold.explorer",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -12,13 +13,14 @@
   "app": {
     "windows": [
       {
-        "title": "WMFold - 化学文件资源管理器",
+        "title": "wmfold - 化学文件资源管理器",
         "width": 1200,
         "height": 780,
         "minWidth": 900,
         "minHeight": 560,
         "resizable": true,
-        "center": true
+        "center": true,
+        "decorations": false
       }
     ],
     "security": {
@@ -28,6 +30,10 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
+    "resources": {
+      "resources/wmfold-server": "wmfold-server"
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -35,5 +41,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEI2Njk0QkUxNUQ2NEIwRjUKUldUMXNHUmQ0VXRwdHRsK3AwUzdGa3UycGJYZXdnOG1wK2NZeWFJTWJIeEhGUHE5K0tQRzA1bmUK",
+      "endpoints": [
+        "https://www.xiaofei911.top/statics/wmfold-updates/windows/latest-version-info.json"
+      ]
+    }
   }
 }

@@ -1,4 +1,4 @@
-// 构建后将 wmfold.exe 复制为带版本号的程序名，例如 WMFold_0.2.0.exe。
+// 构建后将 wmfold.exe 复制为带版本号的程序名，例如 wmfold_0.3.5.exe。
 // 用法：node scripts/rename-exe.mjs
 import fs from 'node:fs';
 import path from 'node:path';
@@ -18,6 +18,6 @@ if (!fs.existsSync(srcExe)) {
   process.exit(1);
 }
 
-const destExe = path.join(releaseDir, `WMFold_${version}.exe`);
+const destExe = path.join(releaseDir, `wmfold_${version}.exe`);
 fs.copyFileSync(srcExe, destExe);
 console.log(`[rename] 已生成带版本号的程序：${destExe}`);

@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<script>document.documentElement.classList.add('js');</script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>wmfold — 化学文件资源管理器｜化学式、电荷、能量直接显示在文件列表</title>
+<meta name="description" content="wmfold 是一个仿 Windows 资源管理器的桌面工具，专为量子化学计算目录设计：Gaussian、ORCA、Molden、XYZ 文件里的化学式、原子数、电荷、多重度、基组函数、分子量与能量，直接变成文件列表的列。支持 SSH 远程机器、跨设备复制与命令行 JSON 接口。" />
+<meta name="theme-color" content="#FAFAF7" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="wmfold — 化学文件资源管理器" />
+<meta property="og:description" content="像浏览文件一样浏览你的计算结果：化学式、原子数、电荷、多重度、基组、分子量、能量，直接成为表头列。" />
+<meta property="og:image" content="https://www.xiaofei911.top/statics/wmfold/assets/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="canonical" href="https://www.xiaofei911.top/statics/wmfold/" />
+<link rel="icon" href="assets/favicon.png" type="image/png" />
+<link rel="apple-touch-icon" href="assets/icon-192.png" />
+<link rel="preload" href="assets/fonts/serif.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="assets/fonts/sans.woff2" as="font" type="font/woff2" crossorigin />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "wmfold",
+  "alternateName": "wmfold 化学文件资源管理器",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Windows 10, Windows 11",
+  "softwareVersion": "0.3.34",
+  "description": "仿 Windows 资源管理器的量子化学文件管理器：把 Gaussian / ORCA / Molden / XYZ 等文件中的化学式、原子数、电荷、多重度、基组函数、分子量、能量解析为文件列表的列。",
+  "downloadUrl": "https://www.xiaofei911.top/statics/wmfold-updates/windows/0.3.34/wmfold_0.3.34_x64-setup.exe",
+  "author": { "@type": "Person", "name": "石小飞", "url": "https://www.xiaofei911.top" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
+}
+</script>
+<style>
+/* ------------------------------------------------------------------ */
+/*  tokens                                                             */
+/* ------------------------------------------------------------------ */
+@font-face {
+  font-family: "wmfold Serif";
+  src: url("assets/fonts/serif.woff2") format("woff2");
+  font-weight: 350 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "wmfold Sans";
+  src: url("assets/fonts/sans.woff2") format("woff2");
+  font-weight: 300 900;
+  font-display: swap;
+}
+
+:root {
+  --paper: #fafaf7;
+  --paper-2: #f2f1ec;
+  --paper-3: #eceae4;
+  --ink: #12151a;
+  --ink-2: #454c55;
+  --muted: #767d86;
+  --line: #e3e1da;
+  --line-2: #d4d1c7;
+  --cyan: #0d9db9;
+  --cyan-bright: #2cc5e0;
+  --amber: #e0a03a;
+  --dark: #101418;
+  --serif: "wmfold Serif", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
+  --sans: "wmfold Sans", "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --mono: "Cascadia Mono", "JetBrains Mono", "SFMono-Regular", ui-monospace, Consolas, "Courier New", monospace;
+  --shadow-1: 0 1px 2px rgba(18, 21, 26, 0.05);
+  --shadow-2: 0 2px 4px rgba(18, 21, 26, 0.04), 0 28px 60px -30px rgba(18, 21, 26, 0.28);
+  --r: 14px;
+  --wrap: 1180px;
+}
+
+/* ------------------------------------------------------------------ */
+/*  base                                                               */
+/* ------------------------------------------------------------------ */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.8;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection { background: rgba(44, 197, 224, 0.28); }
+img { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; }
+h1, h2, h3, h4, p, figure, blockquote { margin: 0; }
+h1, h2 { font-family: var(--serif); font-weight: 600; letter-spacing: -0.015em; text-wrap: balance; }
+.nb { white-space: nowrap; }
+h3 { font-weight: 600; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 3px; }
+
+section[id] { scroll-margin-top: 76px; }
+.wrap { width: 100%; max-width: var(--wrap); margin-inline: auto; padding-inline: clamp(20px, 4vw, 40px); }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.skip {
+  position: absolute; left: -9999px; top: 0; z-index: 100;
+  background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 0 0 8px 0;
+}
+.skip:focus { left: 0; }
+
+/* ------------------------------------------------------------------ */
+/*  header                                                             */
+/* ------------------------------------------------------------------ */
+.site-head {
+  position: sticky; top: 0; z-index: 40;
+  background: color-mix(in srgb, var(--paper) 82%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.3s ease, background 0.3s ease;
+}
+.site-head.is-scrolled { border-bottom-color: var(--line); background: var(--paper); }
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .site-head { background: var(--paper); }
+}
+.head-inner { display: flex; align-items: center; gap: 24px; height: 62px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; margin-right: auto; }
+.brand img { width: 26px; height: 26px; border-radius: 7px; }
+.brand-name {
+  font-family: var(--serif); font-size: 21px; font-weight: 600; letter-spacing: -0.02em; line-height: 1;
+}
+.brand-tag {
+  font-size: 11px; letter-spacing: 0.08em; color: var(--muted);
+  padding-left: 10px; margin-left: 2px; border-left: 1px solid var(--line-2);
+  white-space: nowrap;
+}
+.site-nav { display: flex; align-items: center; gap: 26px; font-size: 14px; color: var(--ink-2); }
+.site-nav a { position: relative; padding: 4px 0; }
+.site-nav a::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 1px;
+  background: var(--cyan); transform: scaleX(0); transform-origin: left;
+  transition: transform 0.25s ease;
+}
+.site-nav a:hover { color: var(--ink); }
+.site-nav a:hover::after { transform: scaleX(1); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  padding: 12px 22px; border-radius: 999px; border: 1px solid transparent;
+  font-size: 14px; font-weight: 500; letter-spacing: 0.01em; cursor: pointer;
+  background: var(--ink); color: #fbfbf8;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 10px 24px -12px rgba(18, 21, 26, 0.5); }
+.btn:active { transform: translateY(0); }
+.btn .mono { font-size: 12px; opacity: 0.62; letter-spacing: 0; }
+.btn-ghost { background: transparent; color: var(--ink); border-color: var(--line-2); }
+.btn-ghost:hover { border-color: var(--ink); box-shadow: none; background: #fff; }
+.btn-sm { padding: 8px 16px; font-size: 13px; }
+
+/* ------------------------------------------------------------------ */
+/*  shared section furniture                                           */
+/* ------------------------------------------------------------------ */
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted);
+}
+.eyebrow::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--cyan-bright); box-shadow: 0 0 0 3px rgba(44, 197, 224, 0.16);
+}
+.sec { padding-block: clamp(64px, 8.5vw, 118px); position: relative; }
+.sec-head { max-width: 720px; }
+.sec-head h2 { font-size: clamp(28px, 3.5vw, 44px); line-height: 1.22; margin-top: 18px; }
+.lead { margin-top: 20px; font-size: 16.5px; line-height: 1.92; color: var(--ink-2); max-width: 40em; }
+.rule { border: 0; border-top: 1px solid var(--line); margin: 0; }
+
+/* ------------------------------------------------------------------ */
+/*  hero                                                               */
+/* ------------------------------------------------------------------ */
+.hero { position: relative; padding-top: clamp(48px, 7vw, 92px); overflow: clip; }
+.hero::before {
+  content: ""; position: absolute; inset: -20% -10% auto -10%; height: 120%;
+  background-image:
+    linear-gradient(to right, rgba(18, 21, 26, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(18, 21, 26, 0.045) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(120% 78% at 72% 0%, #000 0%, transparent 68%);
+  mask-image: radial-gradient(120% 78% at 72% 0%, #000 0%, transparent 68%);
+  pointer-events: none;
+}
+.hero-glow {
+  position: absolute; right: -18%; top: -32%; width: 780px; height: 780px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(44, 197, 224, 0.16) 0%, rgba(44, 197, 224, 0) 62%);
+  pointer-events: none;
+}
+.hero .wrap { position: relative; }
+.hero h1 {
+  margin-top: 22px;
+  font-size: clamp(38px, 6.1vw, 74px);
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.hero h1 .accent { color: var(--cyan); }
+.hero .lede {
+  margin-top: 26px; max-width: 40em;
+  font-size: clamp(15.5px, 1.35vw, 17.5px); line-height: 1.95; color: var(--ink-2);
+  text-wrap: pretty;
+}
+.hero .cta-row { margin-top: 34px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.hero .meta {
+  margin-top: 22px; display: flex; flex-wrap: wrap; gap: 8px 22px;
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.03em; color: var(--muted);
+}
+.hero .meta span { display: inline-flex; align-items: center; gap: 7px; }
+.hero .meta i { width: 4px; height: 4px; border-radius: 50%; background: var(--line-2); }
+
+.shot { position: relative; margin-top: clamp(38px, 5vw, 64px); }
+.shot-frame {
+  position: relative;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  overflow: hidden;
+  background: #fff;
+  box-shadow: var(--shadow-2);
+}
+.shot-frame a { display: block; cursor: zoom-in; }
+.shot-frame img { width: 100%; height: auto; }
+.shot-caption {
+  margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline;
+  font-size: 12.5px; color: var(--muted); line-height: 1.7;
+}
+.shot-caption .mono { color: var(--ink-2); font-size: 12px; }
+
+/* ------------------------------------------------------------------ */
+/*  chem table                                                         */
+/* ------------------------------------------------------------------ */
+.chem-sec { border-top: 1px solid var(--line); background: linear-gradient(180deg, rgba(242, 241, 236, 0.55), rgba(250, 250, 247, 0)); }
+.table-toolbar {
+  margin-top: 34px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
+  padding-bottom: 14px; border-bottom: 1px solid var(--line-2);
+}
+.table-toolbar .hint { font-size: 12.5px; color: var(--muted); margin-right: auto; }
+.switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13.5px; color: var(--ink-2); }
+.switch .track {
+  width: 42px; height: 24px; border-radius: 999px; background: var(--paper-3);
+  border: 1px solid var(--line-2); position: relative; transition: background 0.25s ease, border-color 0.25s ease;
+}
+.switch .track::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.25s cubic-bezier(0.3, 0.9, 0.3, 1.2);
+}
+.switch[aria-pressed="true"] .track { background: var(--cyan); border-color: var(--cyan); }
+.switch[aria-pressed="true"] .track::after { transform: translateX(18px); }
+.switch[aria-pressed="true"] .lbl { color: var(--ink); }
+
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table.data {
+  width: 100%; min-width: 720px; border-collapse: collapse; font-size: 14px;
+}
+table.data thead th {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em;
+  color: var(--muted); font-weight: 400; text-align: left; padding: 13px 14px 11px;
+  border-bottom: 1px solid var(--ink); white-space: nowrap;
+}
+table.data tbody td {
+  padding: 12px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: middle;
+}
+table.data tbody tr { transition: background 0.18s ease; }
+table.data tbody tr:hover { background: rgba(255, 255, 255, 0.75); }
+table.data tbody tr:hover .chem-cell { color: var(--ink); }
+.fname { font-size: 13.5px; color: var(--ink); }
+.fname .ext { color: var(--muted); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 12.5px; text-align: right; color: var(--ink-2); }
+/* 头部数字列也要右对齐（table.data thead th 的优先级更高，所以这里带上 table） */
+table.data thead th.num { text-align: right; }
+table.data th.col-size, table.data td.col-size { width: 104px; }
+table.data th.col-date, table.data td.col-date { width: 176px; }
+/* 关掉化学列后只剩 文件 / 大小 / 修改日期：固定后两列宽度，让三列看起来整齐 */
+table.data.is-chem-off { table-layout: fixed; }
+table.data.is-chem-off th.col-size, table.data.is-chem-off td.col-size { width: 120px; }
+table.data.is-chem-off th.col-date, table.data.is-chem-off td.col-date { width: 190px; }
+.formula { font-family: var(--mono); font-size: 13px; color: var(--ink); letter-spacing: 0.01em; }
+.chem-col { color: var(--ink-2); }
+.energy { color: #0b6f83; }
+table.data.is-chem-off .chem-col { display: none; }
+.chem-cell { transition: color 0.2s ease; }
+.tfoot-note {
+  margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px 16px;
+  font-size: 12px; color: var(--muted);
+}
+.tfoot-note .mono { color: var(--ink-2); font-size: 11.5px; }
+
+/* ------------------------------------------------------------------ */
+/*  feature grid                                                       */
+/* ------------------------------------------------------------------ */
+.features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin-top: 52px; background: var(--line); border-block: 1px solid var(--line); }
+.feature { background: var(--paper); padding: 30px 26px 34px; position: relative; transition: background 0.25s ease; }
+.feature:hover { background: #fff; }
+.feature .no { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--muted); }
+.feature h3 { margin-top: 16px; font-size: 16.5px; letter-spacing: -0.005em; }
+.feature p { margin-top: 9px; font-size: 14px; line-height: 1.85; color: var(--ink-2); }
+.feature .tagline { margin-top: 14px; font-family: var(--mono); font-size: 11px; color: var(--cyan); letter-spacing: 0.04em; }
+
+/* ------------------------------------------------------------------ */
+/*  split sections                                                     */
+/* ------------------------------------------------------------------ */
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: clamp(28px, 5vw, 66px); align-items: start; }
+.split.flip { grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); }
+.split .col-text { padding-top: 6px; }
+.bullets { margin: 26px 0 0; padding: 0; list-style: none; display: grid; gap: 0; }
+.bullets li { padding: 14px 0 14px 26px; border-top: 1px solid var(--line); position: relative; font-size: 14.5px; line-height: 1.8; color: var(--ink-2); }
+.bullets li:first-child { border-top-color: var(--line-2); }
+.bullets li::before {
+  content: ""; position: absolute; left: 2px; top: 23px; width: 7px; height: 7px;
+  border: 1px solid var(--cyan); transform: rotate(45deg);
+}
+.bullets strong { color: var(--ink); font-weight: 600; }
+.bullets .mono { font-size: 12px; color: var(--ink); }
+.shot-frame.is-cropped { max-height: 560px; }
+.shot-frame.is-cropped img { width: 100%; }
+
+.note-inline {
+  margin-top: 26px; padding: 18px 20px; border: 1px dashed var(--line-2); border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5); font-size: 13px; line-height: 1.85; color: var(--ink-2);
+}
+.note-inline b { color: var(--ink); font-weight: 600; }
+
+/* ------------------------------------------------------------------ */
+/*  formats                                                            */
+/* ------------------------------------------------------------------ */
+.formats { margin-top: 46px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 60px; }
+.fmt-group { padding: 20px 0; border-top: 1px solid var(--line); }
+.fmt-group h3 { font-size: 14px; color: var(--ink); letter-spacing: 0.02em; }
+.fmt-group .apps { margin-top: 10px; font-family: var(--mono); font-size: 12px; color: var(--muted); word-spacing: 2px; }
+.cols-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.chip {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.02em;
+  padding: 6px 12px; border: 1px solid var(--line-2); border-radius: 999px; color: var(--ink-2); background: #fff;
+}
+
+/* ------------------------------------------------------------------ */
+/*  dark terminal section                                              */
+/* ------------------------------------------------------------------ */
+.dark { background: var(--dark); color: #e8eae6; position: relative; overflow: clip; }
+.dark::before {
+  content: ""; position: absolute; left: -10%; top: -40%; width: 620px; height: 620px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(44, 197, 224, 0.18), rgba(44, 197, 224, 0) 65%);
+  pointer-events: none;
+}
+.dark .eyebrow { color: rgba(232, 234, 230, 0.55); }
+.dark .sec-head h2 { color: #f4f5f1; }
+.dark .lead { color: rgba(232, 234, 230, 0.72); }
+.dark .rule { border-top-color: rgba(255, 255, 255, 0.14); }
+.term-hero { margin-top: 46px; }
+.term-hero .term-frame { max-width: 1080px; }
+.term-below { margin-top: 30px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px 26px; align-items: start; }
+.term-frame {
+  border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 12px; overflow: hidden;
+  background: #0b0e11; box-shadow: 0 30px 70px -40px rgba(0, 0, 0, 0.9);
+}
+.term-bar { display: flex; align-items: center; gap: 7px; padding: 11px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+.term-bar i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, 0.18); }
+.term-bar span { margin-left: 8px; font-family: var(--mono); font-size: 10.5px; color: rgba(232, 234, 230, 0.45); letter-spacing: 0.04em; }
+.term-frame img { width: 100%; }
+.term-output {
+  margin: 0; padding: 22px 24px 26px;
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.9; color: #cdd5d8;
+  background: #0b0e11; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.term-output .p { color: #7fd8e6; }
+.term-caption { margin-top: 12px; font-size: 12px; color: rgba(232, 234, 230, 0.5); }
+.code {
+  font-family: var(--mono); font-size: 12px; line-height: 1.9; color: #cdd5d8;
+  background: rgba(255, 255, 255, 0.045); border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px; padding: 18px 20px; overflow-x: auto; margin: 18px 0 0;
+  white-space: pre; tab-size: 2;
+}
+.code .c { color: rgba(232, 234, 230, 0.42); }
+.code .k { color: #7fd8e6; }
+.code .s { color: #d9c07c; }
+.dark .note-inline { border-color: rgba(255, 255, 255, 0.16); background: rgba(255, 255, 255, 0.03); color: rgba(232, 234, 230, 0.7); }
+.dark .note-inline b { color: #f4f5f1; }
+
+/* ------------------------------------------------------------------ */
+/*  download                                                           */
+/* ------------------------------------------------------------------ */
+.dl-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 24px; }
+.dl-version { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.06em; text-align: right; }
+.dl-version b { display: block; font-family: var(--serif); font-size: 30px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; }
+.dl-grid { margin-top: 42px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.dl-card {
+  display: flex; flex-direction: column; gap: 6px;
+  border: 1px solid var(--line-2); border-radius: 12px; padding: 24px 22px 22px;
+  background: #fff; transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+.dl-card:hover { transform: translateY(-3px); box-shadow: 0 24px 44px -30px rgba(18, 21, 26, 0.4); border-color: var(--ink); }
+.dl-card .kind { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.dl-card .title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+.dl-card .file { font-family: var(--mono); font-size: 11px; color: var(--muted); word-break: break-all; }
+.dl-card .row { margin-top: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.dl-card .size { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+.dl-card .go {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--ink);
+  border-bottom: 1px solid var(--cyan); padding-bottom: 1px;
+}
+.dl-card:hover .go { color: var(--cyan); }
+.badge { display: inline-block; margin-left: 8px; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; color: #0a6b7c; background: rgba(44, 197, 224, 0.16); border-radius: 999px; padding: 2px 8px; vertical-align: 2px; }
+.dl-notes { margin-top: 30px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 40px; }
+.dl-notes p { font-size: 13px; line-height: 1.85; color: var(--ink-2); padding-left: 18px; position: relative; }
+.dl-notes p::before { content: ""; position: absolute; left: 0; top: 10px; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); }
+
+/* ------------------------------------------------------------------ */
+/*  footer                                                             */
+/* ------------------------------------------------------------------ */
+.site-foot { border-top: 1px solid var(--line); padding-block: 48px 40px; background: var(--paper-2); }
+.foot-top { display: flex; flex-wrap: wrap; gap: 28px 48px; align-items: start; justify-content: space-between; }
+.foot-brand { display: flex; gap: 14px; align-items: flex-start; max-width: 30em; }
+.foot-brand img { width: 34px; height: 34px; border-radius: 9px; margin-top: 2px; }
+.foot-brand .name { font-family: var(--serif); font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
+.foot-brand p { font-size: 12.5px; color: var(--muted); line-height: 1.9; margin-top: 4px; }
+.foot-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 42px; font-size: 13px; color: var(--ink-2); }
+.foot-links a:hover { color: var(--cyan); }
+.foot-links .h { grid-column: 1 / -1; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+.foot-bottom {
+  margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between;
+  font-size: 11.5px; color: var(--muted);
+}
+.foot-bottom a:hover { color: var(--ink); }
+
+/* ------------------------------------------------------------------ */
+/*  reveal / motion                                                    */
+/* ------------------------------------------------------------------ */
+.js .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1); transition-delay: var(--d, 0s); }
+.js .reveal.is-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .js .reveal { opacity: 1; transform: none; transition: none; }
+  .btn, .dl-card, .switch .track::after { transition: none; }
+}
+
+/* ------------------------------------------------------------------ */
+/*  responsive                                                         */
+/* ------------------------------------------------------------------ */
+@media (max-width: 1000px) {
+  .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .split, .split.flip { grid-template-columns: minmax(0, 1fr); }
+  .split .col-text { order: 2; }
+  .split .col-media { order: 1; }
+  .split.flip .col-text { order: 2; }
+  .term-below { grid-template-columns: minmax(0, 1fr); }
+  .dl-grid { grid-template-columns: minmax(0, 1fr); }
+  .dl-notes { grid-template-columns: minmax(0, 1fr); }
+  .formats { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+@media (max-width: 720px) {
+  .head-inner { gap: 12px; height: 56px; }
+  .brand-tag { display: none; }
+  .site-nav { display: none; }
+  .features { grid-template-columns: minmax(0, 1fr); }
+  .hero h1 br { display: none; }
+  .dl-version { text-align: left; }
+  .foot-links { grid-template-columns: minmax(0, 1fr); }
+  .table-toolbar .hint { width: 100%; }
+  .shot-frame.is-cropped { max-height: none; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+
+<header class="site-head" id="top">
+  <div class="wrap head-inner">
+    <a class="brand" href="#top" aria-label="wmfold 首页">
+      <img src="assets/icon-192.png" alt="" width="26" height="26" />
+      <span class="brand-name">wmfold</span>
+      <span class="brand-tag">化学文件资源管理器</span>
+    </a>
+    <nav class="site-nav" aria-label="页面导航">
+      <a href="#columns">化学列</a>
+      <a href="#explorer">文件管理</a>
+      <a href="#remote">远程机器</a>
+      <a href="#formats">支持格式</a>
+      <a href="#cli">命令行</a>
+    </nav>
+    <a class="btn btn-sm" href="#download">下载 <span class="mono">v<span data-version>0.3.34</span></span></a>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ============================== HERO ============================== -->
+  <section class="hero">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="wrap">
+      <p class="eyebrow reveal">量子化学文件管理器 · Windows 10 / 11</p>
+      <h1 class="reveal" style="--d:.05s">让文件夹里的化学文件<br /><span class="accent">自己开口说话</span></h1>
+      <p class="lede reveal" style="--d:.1s">
+        wmfold 是一个仿 Windows 资源管理器的桌面工具。Gaussian、ORCA、Molden、XYZ 这些文件里的
+        化学式、原子数、电荷、多重度、基组函数、分子量与能量，会直接变成表头里的列 ——
+        排序、筛选、预览、复制，还是你熟悉的那一套。
+      </p>
+      <div class="cta-row reveal" style="--d:.15s">
+        <a class="btn" href="#download">下载 Windows 版 <span class="mono">18.8 MB</span></a>
+        <a class="btn btn-ghost" href="#columns">先看看它多出什么</a>
+      </div>
+      <p class="meta reveal" style="--d:.2s">
+        <span><i></i>免安装单文件</span>
+        <span><i></i>内置命令行 JSON 接口</span>
+        <span><i></i>解析失败只会显示「—」</span>
+        <span><i></i>无需联网</span>
+      </p>
+    </div>
+
+    <div class="wrap">
+      <figure class="shot reveal" style="--d:.24s">
+        <div class="shot-frame">
+          <a href="assets/app-log.webp" target="_blank" rel="noopener" aria-label="查看整窗大图"><img src="assets/app-log.webp" width="2400" height="1333" alt="wmfold 主界面：在 D:\QM\芳香性 目录按「高斯日志」筛选，表头显示化学式、原子数、电荷、多重度、能量与分子量，右侧预览面板显示 C6H6.log 的分子信息。" /></a>
+        </div>
+        <figcaption class="shot-caption">
+          <span class="mono">D:\QM\芳香性</span>
+          <span>按「高斯日志」筛选后：8 个输出文件的化学信息直接成为表头列，右侧预览显示选中分子的完整信息。</span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============================ CHEM TABLE ========================== -->
+  <section class="sec chem-sec" id="columns">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow reveal">化学列</p>
+        <h2 class="reveal" style="--d:.05s">一份计算目录，本来就该能被「读」</h2>
+        <p class="lead reveal" style="--d:.1s">
+          每一列都由 <span class="mono">rswfn</span>
+          从文件内容里解析出来，不是从文件名猜的。下面是本页示例目录的真实解析结果 ——
+          拨一下开关，看看它和普通文件管理器的区别。
+        </p>
+      </div>
+
+      <div class="table-toolbar reveal">
+        <span class="hint">示例数据：8 个 Gaussian 输出文件，由 <span class="mono">wmfold -cli list D:\QM\芳香性 --chem</span> 生成</span>
+        <button class="switch" id="chemToggle" type="button" aria-pressed="true" aria-label="显示或隐藏化学列">
+          <span class="track" aria-hidden="true"></span>
+          <span class="lbl">化学列</span>
+        </button>
+      </div>
+
+      <div class="table-wrap reveal">
+        <table class="data" id="chemTable">
+          <thead>
+            <tr>
+              <th scope="col">文件</th>
+              <th scope="col" class="chem-col">化学式</th>
+              <th scope="col" class="chem-col num">原子数</th>
+              <th scope="col" class="chem-col num">电荷</th>
+              <th scope="col" class="chem-col num">多重度</th>
+              <th scope="col" class="chem-col num">能量 (a.u.)</th>
+              <th scope="col" class="chem-col num">分子量</th>
+              <th scope="col" class="num col-size">大小</th>
+              <th scope="col" class="num col-date">修改日期</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="fname">C4H4<span class="ext">.log</span></td><td class="chem-col formula">H4C4</td><td class="chem-col num">8</td><td class="chem-col num">0</td><td class="chem-col num">1</td><td class="chem-col num energy">-154.675463</td><td class="chem-col num">52.076</td><td class="num col-size">751.4 KB</td><td class="num col-date">2025-03-25 11:46</td></tr>
+            <tr><td class="fname">C6H4<span class="ext">.log</span></td><td class="chem-col formula">H4C6</td><td class="chem-col num">10</td><td class="chem-col num">0</td><td class="chem-col num">1</td><td class="chem-col num energy">-230.818433</td><td class="chem-col num">76.098</td><td class="num col-size">1.4 MB</td><td class="num col-date">2025-03-25 11:46</td></tr>
+            <tr><td class="fname">C6H6<span class="ext">.log</span></td><td class="chem-col formula">H6C6</td><td class="chem-col num">12</td><td class="chem-col num">0</td><td class="chem-col num">1</td><td class="chem-col num energy">-232.248649</td><td class="chem-col num">78.114</td><td class="num col-size">1.6 MB</td><td class="num col-date">2025-03-25 11:46</td></tr>
+            <tr><td class="fname">line6<span class="ext">.log</span></td><td class="chem-col formula">H8C6</td><td class="chem-col num">14</td><td class="chem-col num">0</td><td class="chem-col num">1</td><td class="chem-col num energy">-233.384671</td><td class="chem-col num">80.130</td><td class="num col-size">5.5 MB</td><td class="num col-date">2025-03-25 11:46</td></tr>
+            <tr><td class="fname">ph-ph<span class="ext">.log</span></td><td class="chem-col formula">H10C12</td><td class="chem-col num">22</td><td class="chem-col num">0</td><td class="chem-col num">1</td><td class="chem-col num energy">-463.302061</td><td class="chem-col num">154.212</td><td class="num col-size">2.5 MB</td><td class="num col-date">2025-03-25 11:46</td></tr>
+            <tr><td class="fname">phR-phR<span class="ext">.log</span></td><td class="chem-col formula">H8C12O3</td><td class="chem-col num">23</td><td class="chem-col num">0</td><td class="chem-col num">1</td><td class="chem-col num energy">-687.724250</td><td class="chem-col num">200.193</td><td class="num col-size">7.6 MB</td><td class="num col-date">2025-03-25 11:47</td></tr>
+            <tr><td class="fname">rNF2<span class="ext">.log</span></td><td class="chem-col formula">H4C4NF2</td><td class="chem-col num">11</td><td class="chem-col num">1</td><td class="chem-col num">1</td><td class="chem-col num energy">-408.736015</td><td class="chem-col num">104.079</td><td class="num col-size">6.9 MB</td><td class="num col-date">2025-03-25 11:47</td></tr>
+            <tr><td class="fname">rNH2<span class="ext">.log</span></td><td class="chem-col formula">H6C4N</td><td class="chem-col num">11</td><td class="chem-col num">1</td><td class="chem-col num">1</td><td class="chem-col num energy">-210.465486</td><td class="chem-col num">68.099</td><td class="num col-size">3.7 MB</td><td class="num col-date">2025-03-25 11:47</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="tfoot-note">
+        <span>能量取日志中最后一次 SCF Done（Hartree）；分子量由原子量累加，单位 g/mol。</span>
+        <span class="mono">charges +1 的 rNF2 / rNH2 也能正确读出</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================ FEATURES ============================ -->
+  <section class="sec" id="features">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow reveal">能力</p>
+        <h2 class="reveal" style="--d:.05s">不只是多几列</h2>
+        <p class="lead reveal" style="--d:.1s">从解析、筛选、预览，到 SSH 远程浏览、跨设备传输与作业队列 —— 整条计算流程都收在同一个窗口里。</p>
+      </div>
+
+      <div class="features reveal">
+        <article class="feature">
+          <div class="no">01</div>
+          <h3>15 个扩展名，一套解析</h3>
+          <p>Gaussian 的 gjf / com / log / fch / fchk，ORCA 的 inp / out，XYZ、MOL、SDF，Molden、DMol3 与 cub 格点文件，统一走进 <span class="mono">wmfold-core</span> 的化学解析。</p>
+          <div class="tagline">rswfn 驱动的元数据</div>
+        </article>
+        <article class="feature">
+          <div class="no">02</div>
+          <h3>类型筛选，表头跟着换</h3>
+          <p>命令栏下方一排类型按钮：全部 / 高斯输入 / 高斯日志 / 量化输出 / 检查点 / XYZ / MOL / SDF / Molden / DMol / Orca / 格点。点一下只剩该类型，表头自动切换成该类型能提供的化学列。</p>
+          <div class="tagline">每个类型的列都能单独配置</div>
+        </article>
+        <article class="feature">
+          <div class="no">03</div>
+          <h3>选中即有预览</h3>
+          <p>单击文件，右侧面板列出完整信息：化学式、原子数、总电荷、多重度、α/β 电子、基组函数、分子量、能量。分隔条可以拖动，宽度会被记住。</p>
+          <div class="tagline">预览 / 作业查询 双页签</div>
+        </article>
+        <article class="feature">
+          <div class="no">04</div>
+          <h3>远程机器，像本地一样浏览</h3>
+          <p>在设置里添加 SSH 机器（密钥或密码都行），标题栏「+」打开它的标签页。首次连接会把静态 Linux 版上传到 <span class="mono nb">~/.local/bin</span>，之后按远端 <span class="mono">wmfold -cli</span> 输出的 JSON 浏览。</p>
+          <div class="tagline">每台机器独立的路径与筛选</div>
+        </article>
+        <article class="feature">
+          <div class="no">05</div>
+          <h3>跨设备复制粘贴</h3>
+          <p>本机 ↔ 远程、远程 A ↔ 远程 B，复制 / 剪切 / 粘贴整份文件或整个目录都行；传输走 tar 流式管道，剪切在传完后删除源路径，大文件也不会被读进内存。</p>
+          <div class="tagline">Ctrl+C / Ctrl+X / Ctrl+V</div>
+        </article>
+        <article class="feature">
+          <div class="no">06</div>
+          <h3>顺手看一眼队列</h3>
+          <p>给远程机器启用「作业查询」，右侧面板就会定时执行配置的命令（默认 <span class="mono">squeue -u $USER</span>），空白分隔的输出自动排成表格，刷新间隔 5–600 秒可调。</p>
+          <div class="tagline">squeue / qstat 都能用</div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ EXPLORER =========================== -->
+  <section class="sec" id="explorer" style="border-top:1px solid var(--line)">
+    <div class="wrap split">
+      <div class="col-text">
+        <p class="eyebrow reveal">资源管理器</p>
+        <h2 class="reveal" style="--d:.05s;font-size:clamp(25px,2.7vw,34px);line-height:1.3;margin-top:16px">它首先是一个称职的文件管理器</h2>
+        <p class="lead reveal" style="--d:.1s">
+          化学列只是加在熟悉界面上的东西。日常的文件操作一个都没有少，快捷键也按 Windows 的习惯来。
+        </p>
+        <ul class="bullets reveal" style="--d:.14s">
+          <li>面包屑地址栏，双击可直接输入路径；<span class="mono nb">Alt+←/→</span> 后退前进，<span class="mono">Backspace</span> 上一级，<span class="mono">F5</span> 刷新</li>
+          <li>列头排序（文件夹始终置顶）、当前目录搜索、类型筛选与计数</li>
+          <li><span class="mono">F2</span> 重命名、<span class="mono">Delete</span> 删除（默认进回收站）、<span class="mono nb">Ctrl+C/X/V</span> 复制剪切粘贴、<span class="mono">Ctrl+N</span> 新建文件、<span class="mono nb">Ctrl+Shift+N</span> 新建文件夹</li>
+          <li>机器标签可以拖出成独立窗口，再拖回去合并；标签右键也有「在新窗口打开 / 合并到主窗口」</li>
+          <li><span class="mono nb">Ctrl+`</span> 在当前目录打开外部终端：自动 / Windows Terminal / PowerShell / cmd 可选</li>
+        </ul>
+        <div class="note-inline reveal">
+          <b>单一实例：</b>重复启动只会把已有窗口提到前面，不会出现两个进程抢同一份配置。
+        </div>
+      </div>
+      <div class="col-media">
+        <figure class="shot" style="margin-top:0">
+          <div class="shot-frame">
+            <a href="assets/app-files.webp" target="_blank" rel="noopener" aria-label="查看整窗大图"><img src="assets/app-files.webp" width="2000" height="1286" alt="wmfold 的「全部文件」视图：混合的 gjf / log / fch / molden / xyz / mol / sdf / out 文件按类型着色，右侧预览显示 C6H6.log 的分子信息。" /></a>
+          </div>
+          <figcaption class="shot-caption"><span>「全部文件」视图：类型标签着色，右侧预览随时可读。</span></figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= REMOTE ============================ -->
+  <section class="sec" id="remote" style="border-top:1px solid var(--line);background:linear-gradient(180deg,rgba(242,241,236,.6),rgba(250,250,247,0))">
+    <div class="wrap split flip">
+      <div class="col-media">
+        <figure class="shot" style="margin-top:0">
+          <div class="shot-frame">
+            <a href="assets/app-settings.webp" target="_blank" rel="noopener" aria-label="查看大图"><img src="assets/app-settings.webp" width="1800" height="1123" alt="wmfold 设置窗口的「展示信息」页：按文件类型勾选要显示哪些化学列。" /></a>
+          </div>
+          <figcaption class="shot-caption"><span>设置 → 展示信息：每种类型单独挑列，可一键恢复默认。</span></figcaption>
+        </figure>
+      </div>
+      <div class="col-text">
+        <p class="eyebrow reveal">远程与设置</p>
+        <h2 class="reveal" style="--d:.05s;font-size:clamp(25px,2.7vw,34px);line-height:1.3;margin-top:16px">计算在服务器上，浏览也可以</h2>
+        <p class="lead reveal" style="--d:.1s">
+          远程标签页和本地标签页长得一样：POSIX 路径、面包屑、排序、筛选、化学列、预览全都在。
+          只是每一条数据都来自远端 <span class="mono nb">wmfold -cli</span> 的 JSON。
+        </p>
+        <ul class="bullets reveal" style="--d:.14s">
+          <li><strong>两种认证：</strong>不填密码走系统 OpenSSH 密钥；填密码则用随包的 PuTTY plink，密码经 DPAPI 加密后保存在本机，命令结束后立即删除临时密码文件</li>
+          <li><strong>自动装好服务端：</strong>首次连接把静态 Linux 版放到 <span class="mono">~/.local/bin/wmfold</span>，之后复用缓存，不再反复握手</li>
+          <li><strong>快速访问按机器切换：</strong>每台机器有自己的「用户目录」与固定目录，固定项缺失时会灰显并标出「不可用」</li>
+          <li><strong>展示信息可调：</strong>每种文件类型勾选需要的列；另外可以显示隐藏文件、选择外部终端工具</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ FORMATS =========================== -->
+  <section class="sec" id="formats" style="border-top:1px solid var(--line)">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow reveal">支持格式</p>
+        <h2 class="reveal" style="--d:.05s">认识你常用的那些文件</h2>
+        <p class="lead reveal" style="--d:.1s">
+          文件类型由扩展名识别，内容交给 <span class="mono">rswfn</span> 解析；不同格式能提供的列不一样，界面上就只显示它对得上的那几列。
+        </p>
+      </div>
+
+      <div class="formats reveal">
+        <div class="fmt-group">
+          <h3>Gaussian</h3>
+          <div class="apps">.gjf · .com · .log · .fch · .fchk</div>
+        </div>
+        <div class="fmt-group">
+          <h3>ORCA</h3>
+          <div class="apps">.inp · .out</div>
+        </div>
+        <div class="fmt-group">
+          <h3>结构文件</h3>
+          <div class="apps">.xyz · .mol · .sdf</div>
+        </div>
+        <div class="fmt-group">
+          <h3>Molden</h3>
+          <div class="apps">.molden · .mde</div>
+        </div>
+        <div class="fmt-group">
+          <h3>DMol3 与格点</h3>
+          <div class="apps">.dmo · .dmi · .cub</div>
+        </div>
+        <div class="fmt-group">
+          <h3>可用的化学列</h3>
+          <div class="cols-list">
+            <span class="chip">化学式</span><span class="chip">原子数</span><span class="chip">电荷</span><span class="chip">多重度</span><span class="chip">α/β 电子</span><span class="chip">基组函数</span><span class="chip">分子量</span><span class="chip">能量 (a.u.)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="note-inline reveal">
+        <b>坏文件不会拖垮窗口：</b>所有解析都经过 <span class="mono">wmfold-core</span> 的三层防护 —— 先对易崩溃的格式（gjf、log）做必要标记预检，再把读取包进 <span class="mono">catch_unwind</span>，最后失败即降级为「—」。这也是它永远不直接调用 <span class="mono">Mole::from_file</span> 的原因。
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== CLI ============================== -->
+  <section class="sec dark" id="cli">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow reveal">命令行接口</p>
+        <h2 class="reveal" style="--d:.05s">远程浏览，靠的就是这一个命令</h2>
+        <p class="lead reveal" style="--d:.1s">
+          桌面端的「远程机器」不是另写的一套协议：每一条目录数据都来自远端 <span class="mono nb">wmfold -cli</span> 输出的 JSON。
+          协议版本 1、结果单行输出、字段稳定，脚本和调度系统也可以直接拿去用。
+        </p>
+      </div>
+
+      <figure class="term-hero reveal" style="margin:0">
+        <div class="term-frame">
+          <div class="term-bar" aria-hidden="true"><i></i><i></i><i></i><span>ssh calc-node &nbsp;·&nbsp; wmfold -cli list ~/calc --chem</span></div>
+          <pre class="term-output" aria-label="命令行输出示例"><span class="p">$</span> wmfold -cli list ~/calc --chem
+{"protocol":1,"path":"/home/user/calc","entries":[{"name":"C6H6.log","kind":"log","isChem":true,"size":1628201,"chem":{"formula":"H6C6","nAtoms":12,"charge":0,"multip":1,"nBasis":216,"molW":78.114,"energy":-232.24864864}},…]}</pre>
+        </div>
+        <figcaption class="term-caption">输出为单行 JSON（此处按可读宽度折行、路径为示例）；每台机器首次连接时，随包的 Linux x86_64（musl 静态）二进制会被放进 <span class="mono">~/.local/bin/wmfold</span>，之后直接调用。</figcaption>
+      </figure>
+
+      <div class="term-below">
+        <div class="reveal">
+          <pre class="code" aria-label="命令行用法"><span class="c"># 三个子命令，输出都是 JSON</span>
+<span class="k">wmfold</span> <span class="s">-cli</span> list ~/calc <span class="s">--chem</span>
+<span class="k">wmfold</span> <span class="s">-cli</span> info ~/calc/C6H6.xyz <span class="s">--chem</span>
+<span class="k">wmfold</span> <span class="s">-cli</span> version</pre>
+        </div>
+        <div class="reveal" style="--d:.1s">
+          <pre class="code" aria-label="JSON 字段"><span class="c">// 解析出来的化学字段（entries[0].chem）</span>
+{
+  <span class="k">"formula"</span>: <span class="s">"H6C6"</span>,
+  <span class="k">"nAtoms"</span>: 12,
+  <span class="k">"charge"</span>: 0,
+  <span class="k">"multip"</span>: 1,
+  <span class="k">"nBeta"</span>: 21,
+  <span class="k">"nBasis"</span>: 216,
+  <span class="k">"molW"</span>: 78.114,
+  <span class="k">"energy"</span>: -232.24864864
+}</pre>
+        </div>
+      </div>
+
+      <div class="note-inline reveal" style="margin-top:38px">
+        <b>输出不会被打扰：</b>化学解析遇到坏文件时，panic 会被静默记录到临时日志，stdout 始终只有一行 JSON —— 这正是桌面端远程列表能直接解析的原因。
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ DOWNLOAD =========================== -->
+  <section class="sec" id="download">
+    <div class="wrap">
+      <div class="dl-head">
+        <div>
+          <p class="eyebrow reveal">下载</p>
+          <h2 class="reveal" style="--d:.05s;font-size:clamp(28px,3.6vw,46px)">装上，然后打开你的计算目录</h2>
+          <p class="lead reveal" style="--d:.1s;margin-top:16px">
+            Windows 10 / 11 x64 · <span class="mono" data-build-date>2026-11-08</span> 构建 · 桌面端与命令行 JSON 接口都在同一个程序里。
+          </p>
+        </div>
+        <div class="dl-version reveal">
+          当前版本
+          <b data-version>0.3.34</b>
+        </div>
+      </div>
+
+      <div class="dl-grid reveal">
+        <a class="dl-card" data-dl="setup" href="/statics/wmfold-updates/windows/0.3.34/wmfold_0.3.34_x64-setup.exe" download>
+          <span class="kind">NSIS 安装程序<span class="badge">推荐</span></span>
+          <span class="title">安装版</span>
+          <span class="file" data-file>wmfold_0.3.34_x64-setup.exe</span>
+          <span class="row"><span class="size" data-size>5.5 MB</span><span class="go">下载 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v13M6 11l6 6 6-6"/></svg></span></span>
+        </a>
+        <a class="dl-card" data-dl="portable" href="/statics/wmfold-updates/windows/0.3.34/wmfold_0.3.34.exe" download>
+          <span class="kind">免安装</span>
+          <span class="title">便携版</span>
+          <span class="file" data-file>wmfold_0.3.34.exe</span>
+          <span class="row"><span class="size" data-size>18.8 MB</span><span class="go">下载 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v13M6 11l6 6 6-6"/></svg></span></span>
+        </a>
+        <a class="dl-card" data-dl="msi" href="/statics/wmfold-updates/windows/0.3.34/wmfold_0.3.34_x64_en-US.msi" download>
+          <span class="kind">MSI 安装包</span>
+          <span class="title">MSI</span>
+          <span class="file" data-file>wmfold_0.3.34_x64_en-US.msi</span>
+          <span class="row"><span class="size" data-size>8.4 MB</span><span class="go">下载 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v13M6 11l6 6 6-6"/></svg></span></span>
+        </a>
+      </div>
+
+      <div class="dl-notes reveal">
+        <p>程序没有做代码签名，首次运行时 SmartScreen 可能提示「已保护你的电脑」——选择「更多信息 → 仍要运行」即可。</p>
+        <p>依赖系统自带的 WebView2（Windows 10 / 11 默认已安装）；配置与列设置保存在 <span class="mono">%APPDATA%\wmfold</span>。</p>
+        <p>安装包会写入开始菜单与卸载项；便携版单文件，放进 U 盘或共享目录即可使用。下载文件与程序内自动更新使用同一份发布产物。</p>
+        <p>Linux 服务器无需单独下载：桌面端连接后会自行上传静态二进制，或从源码 <span class="mono">cargo build --release</span>。</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <img src="assets/icon-192.png" alt="" width="34" height="34" />
+        <div>
+          <div class="name">wmfold</div>
+          <p>面向量子化学计算目录的文件管理器。与 <a href="https://www.wmview.xyz" target="_blank" rel="noopener">WmView</a>、<a href="https://www.wmview.xyz/doc/wmdraw/" target="_blank" rel="noopener">WmDraw</a> 同一作者，共用「分子可视化与波函数分析」这一套工具链。</p>
+        </div>
+      </div>
+      <nav class="foot-links" aria-label="页脚导航">
+        <span class="h">本站</span>
+        <a href="#columns">化学列</a>
+        <a href="#explorer">文件管理</a>
+        <a href="#remote">远程机器</a>
+        <a href="#formats">支持格式</a>
+        <a href="#cli">命令行接口</a>
+        <a href="#download">下载</a>
+        <span class="h">相关</span>
+        <a href="https://www.xiaofei911.top" target="_blank" rel="noopener">作者主页</a>
+        <a href="https://www.wmview.xyz" target="_blank" rel="noopener">WmView 分子可视化</a>
+        <a href="https://www.wmview.xyz/doc/wmdraw/" target="_blank" rel="noopener">WmDraw 文档</a>
+      </nav>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 wmfold · 石小飞</span>
+      <span><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">豫ICP备2023007582号-1</a></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* sticky header state */
+  var head = document.querySelector(".site-head");
+  var onScroll = function () {
+    head.classList.toggle("is-scrolled", window.scrollY > 8);
+  };
+  onScroll();
+  window.addEventListener("scroll", onScroll, { passive: true });
+
+  /* reveal on scroll */
+  var items = document.querySelectorAll(".reveal");
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          e.target.classList.add("is-in");
+          io.unobserve(e.target);
+        }
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+    items.forEach(function (el) { io.observe(el); });
+  } else {
+    items.forEach(function (el) { el.classList.add("is-in"); });
+  }
+
+  /* chem columns toggle */
+  var toggle = document.getElementById("chemToggle");
+  var table = document.getElementById("chemTable");
+  if (toggle && table) {
+    var sync = function () {
+      var on = toggle.getAttribute("aria-pressed") === "true";
+      table.classList.toggle("is-chem-off", !on);
+    };
+    toggle.addEventListener("click", function () {
+      var next = toggle.getAttribute("aria-pressed") !== "true";
+      toggle.setAttribute("aria-pressed", String(next));
+      sync();
+    });
+    sync();
+  }
+})();
+</script>
+
+<script>
+/* 下载区：从服务器发布目录读取最新版本（latest-version-info.json），
+   自动把三张卡片指向 /statics/wmfold-updates/windows/<version>/… 。
+   读取失败或某个文件缺失时，保留 HTML 里的静态链接。 */
+(function () {
+  "use strict";
+  var BASE = "/statics/wmfold-updates/windows/";
+  var NAMES = {
+    setup: function (v) { return "wmfold_" + v + "_x64-setup.exe"; },
+    portable: function (v) { return "wmfold_" + v + ".exe"; },
+    msi: function (v) { return "wmfold_" + v + "_x64_en-US.msi"; }
+  };
+  function sizeText(bytes) {
+    if (!bytes) return null;
+    return (bytes / 1048576).toFixed(1) + " MB";
+  }
+  function apply(v, sizes) {
+    Object.keys(NAMES).forEach(function (key) {
+      var card = document.querySelector('[data-dl="' + key + '"]');
+      if (!card) return;
+      var name = NAMES[key](v);
+      var href = BASE + v + "/" + name;
+      card.setAttribute("href", href);
+      var file = card.querySelector("[data-file]");
+      if (file) file.textContent = name;
+      var size = card.querySelector("[data-size]");
+      if (size && sizes[key]) size.textContent = sizeText(sizes[key]);
+    });
+    document.querySelectorAll("[data-version]").forEach(function (el) { el.textContent = v; });
+    document.documentElement.setAttribute("data-dl-version", v);
+  }
+  if (!document.querySelector('[data-dl="setup"]')) return;
+  fetch(BASE + "latest-version-info.json", { cache: "no-store" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (m) {
+      if (!m || !m.version) return;
+      var v = String(m.version).trim();
+      if (!/^\d+\.\d+\.\d+$/.test(v)) return;
+      var keys = Object.keys(NAMES);
+      return Promise.all(keys.map(function (key) {
+        return fetch(BASE + v + "/" + NAMES[key](v), { method: "HEAD", cache: "no-store" })
+          .then(function (r) {
+            return { key: key, ok: r.ok, size: Number(r.headers.get("content-length")) || 0 };
+          })
+          .catch(function () { return { key: key, ok: false }; });
+      })).then(function (results) {
+        if (results.some(function (x) { return !x.ok; })) return; // 任一缺失就整体回退
+        var sizes = {};
+        results.forEach(function (x) { sizes[x.key] = x.size; });
+        apply(v, sizes);
+        var dateEl = document.querySelector("[data-build-date]");
+        if (dateEl && m.pub_date) dateEl.textContent = String(m.pub_date).slice(0, 10);
+      });
+    })
+    .catch(function () { /* 保留静态链接 */ });
+})();
+</script>
+</body>
+</html>

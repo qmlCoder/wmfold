@@ -1,0 +1,18 @@
+[package]
+name = "wmfold-core"
+version = "0.3.4"
+edition = "2021"
+description = "WMFold 共享核心：化学文件解析、目录列表、文件操作与数据模型（Tauri GUI / -cli 共用）"
+authors = ["Shi Xiaofei"]
+
+[lib]
+name = "wmfold_core"
+path = "src/lib.rs"
+
+[dependencies]
+# 使用用户自研的波函数分析库解析常见的化学文件
+rswfn = { path = "../../rswfn" }
+serde = { version = "1", features = ["derive"] }
+regex = "1"
+rayon = "1.5"
+trash = "5"
